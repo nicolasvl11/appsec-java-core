@@ -23,3 +23,16 @@ GET /actuator/health
 
 Rules
 Finish features before adding new ones.
+
+Audit logging
+The application records incoming HTTP requests and stores them in PostgreSQL.
+
+Demo:
+1) Call the public ping endpoint
+curl http://localhost:8080/api/v1/ping
+
+2) Retrieve recent audit events (basic auth required)
+User: dev
+Password: devpass
+
+curl -u dev:devpass http://localhost:8080/api/v1/audit-events/recent

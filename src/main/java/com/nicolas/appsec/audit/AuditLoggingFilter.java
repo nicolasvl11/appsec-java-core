@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -25,6 +26,17 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
         return path.startsWith("/actuator");
     }
 
+    private String resolveClientIp(HttpServletRequest request) {
+        String xff = request.getHeader("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) {
+            String ip = xff.split(",")[0].trim();
+            if (ip.matches("^[0-9a-fA-F:.]+$")) {
+                return ip;
+            }
+        }
+        return request.getRemoteAddr();
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
@@ -37,18 +49,20 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
         } finally {
             long durationMs = System.currentTimeMillis() - start;
 
-            String actor = "anonymous";
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.isAuthenticated() && auth.getName() != null) {
+            String actor = "anonymous";
+            if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
                 actor = auth.getName();
             }
+
+            String ip = resolveClientIp(request);
 
             service.recordHttpEvent(
                 actor,
                 request.getMethod(),
                 request.getRequestURI(),
                 wrapped.getStatus(),
-                request.getRemoteAddr(),
+                ip,
                 request.getHeader("User-Agent"),
                 durationMs
             );

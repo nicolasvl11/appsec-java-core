@@ -36,3 +36,11 @@ User: dev
 Password: devpass
 
 curl -u dev:devpass http://localhost:8080/api/v1/audit-events/recent
+
+Audit logging
+Demo
+curl http://localhost:8080/api/v1/ping
+
+curl -u dev:devpass http://localhost:8080/api/v1/audit-events/recent
+
+curl -H "X-Forwarded-For: 203.0.113.10" http://localhost:8080/api/v1/ping

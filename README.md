@@ -1,98 +1,146 @@
 # AppSec Java Core
 
-Backend project to build an AppSec portfolio with a production-style setup.
+Backend project for an Application Security portfolio with production-style fundamentals.
 
 ## Stack
+
 - Java 21
 - Spring Boot
-- Spring Security (Basic Auth)
-- PostgreSQL + Flyway
+- Spring Security with Basic Auth
+- PostgreSQL
+- Flyway
 - Docker Compose
 - Maven Wrapper
-- GitHub Actions
+- GitHub Actions, pending
+
+## What this project shows
+
+- Clean backend structure
+- Basic authentication for protected endpoints
+- Audit logging of HTTP requests
+- In-memory rate limiting by IP and endpoint
+- Trusted proxy handling for `X-Forwarded-For`
+- Reproducible local setup with Docker
+- Automated tests for core behavior
+
+## Endpoints
+
+Public:
+- `GET /api/v1/ping`
+
+Protected with Basic Auth:
+- `GET /api/v1/audit-events/recent`
+
+Ops:
+- `GET /actuator/health`
 
 ## Local setup
 
-### 1) Start Postgres
+### 1. Start PostgreSQL
+
 ```bash
 docker compose up -d
 docker ps
-
-2) Run the app
+2. Run the application
 ./mvnw spring-boot:run
-
-3) Run tests
+3. Run tests
 ./mvnw test
-
 Configuration
-Database (defaults)
-The app uses these defaults unless you override them with env vars:
-DB_URL: jdbc:postgresql://localhost:5432/appsec
-DB_USER: appsec
-DB_PASS: appsec
-Dev basic auth (for protected endpoints)
-Configured in src/main/resources/application.properties:
+Database defaults
+
+The app uses these defaults unless you override them with environment variables:
+
+DB_URL=jdbc:postgresql://localhost:5432/appsec
+DB_USER=appsec
+DB_PASS=appsec
+Dev Basic Auth
+
+Defined in src/main/resources/application.properties:
+
 User: dev
 Password: devpass
 Role: ADMIN
-Trusted proxies (X-Forwarded-For)
-Only requests coming from these proxy IPs are allowed to supply X-Forwarded-For:
+Trusted proxies
+
+Only requests coming from trusted proxy IPs are allowed to supply X-Forwarded-For.
+
 app.trusted-proxies=127.0.0.1,::1
-If the request is not from a trusted proxy, the app uses request.getRemoteAddr().
 
-Endpoints
-Public:
-GET /api/v1/ping
-Protected (Basic Auth):
-GET /api/v1/audit-events/recent
-Ops:
-GET /actuator/health
+If the request does not come from a trusted proxy, the app uses request.getRemoteAddr().
 
-Sprint 3: Audit logging (HTTP requests)
-The application records incoming HTTP requests and stores them in PostgreSQL.
-Recorded fields:
-actor (authenticated username or anonymous)
-method, path, status
-ip (supports X-Forwarded-For when trusted)
+Audit logging
+
+Each HTTP request is recorded in PostgreSQL as an audit event.
+
+Stored fields include:
+
+actor
+action
+target
+eventTime
+meta as JSONB with:
+ip
+method
+status
 userAgent
 durationMs
-Demo:
-1. Call the public ping endpoint
-curl -i http://localhost:8080/api/v1/ping
+Rate limiting
 
-2. Retrieve recent audit events (Basic Auth required)
-curl -i -u dev:devpass http://localhost:8080/api/v1/audit-events/recent
+The application applies in-memory rate limiting per IP and endpoint using a fixed 60-second window.
 
-3. Send a forwarded client IP (trusted proxy only)
-curl -i -H "X-Forwarded-For: 203.0.113.10" http://localhost:8080/api/v1/ping
-
-Sprint 4: Rate limiting (in-memory)
-
-Rate limits per IP + endpoint using an in-memory counter and a fixed 60s window.
 Current limits:
-/api/v1/ping: 30 requests per 60s per IP
-/api/v1/audit-events/recent: 10 requests per 60s per IP
+
+/api/v1/ping: 30 requests per 60 seconds per IP
+/api/v1/audit-events/recent: 10 requests per 60 seconds per IP
+
 Responses include:
+
 RateLimit-Limit
 RateLimit-Remaining
 RateLimit-Reset
-Retry-After (only on 429)
-Rate-limited requests are still audited (you will see status 429 in audit events).
 
-Demo: show headers
+Blocked responses also include:
+
+HTTP 429
+Retry-After
+JSON body with error=rate_limited
+
+Rate-limited requests are still written to the audit log.
+
+Demo commands
+Ping
+curl -i http://localhost:8080/api/v1/ping
+Recent audit events
+curl -i -u dev:devpass http://localhost:8080/api/v1/audit-events/recent
+Rate limit headers
 curl -s -i -H "X-Forwarded-For: 203.0.113.10" http://localhost:8080/api/v1/ping | head -n 20
-
-Demo: trigger 429
-for i in {1..40}; do \
+Trigger 429
+for i in {1..40}; do
   curl -s -o /dev/null -w "%{http_code} " \
-  -H "X-Forwarded-For: 203.0.113.10" \
-  http://localhost:8080/api/v1/ping; \
-done; echo
+    -H "X-Forwarded-For: 203.0.113.10" \
+    http://localhost:8080/api/v1/ping
+done
+echo
+Confirm 429 in audit log
+curl -s -u dev:devpass http://localhost:8080/api/v1/audit-events/recent | head -c 900
+Test strategy
 
-Demo: confirm 429 in audit log
-curl -s -u dev:devpass http://localhost:8080/api/v1/audit-events/recent | head -c 600
+Default test run:
 
+./mvnw test
+
+This runs the fast test suite.
+
+The PostgreSQL integration test for audit logging uses Testcontainers and only runs when explicitly enabled:
+
+RUN_TC=true ./mvnw test
+
+On Windows PowerShell:
+
+$env:RUN_TC="true"
+./mvnw test
 Rules
-Finish features before starting new ones.
-Keep changes small and testable.
-Update README when behavior changes.
+Finish features before starting new ones
+Keep changes small and testable
+Update the README when behavior changes
+Do not commit stray files or logs   

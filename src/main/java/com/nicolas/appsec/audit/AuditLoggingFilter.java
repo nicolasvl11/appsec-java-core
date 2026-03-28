@@ -1,5 +1,6 @@
 package com.nicolas.appsec.audit;
 
+import com.nicolas.appsec.ratelimit.TrustedProxyConfig;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,9 +16,11 @@ import java.io.IOException;
 public class AuditLoggingFilter extends OncePerRequestFilter {
 
     private final AuditEventService service;
+    private final TrustedProxyConfig trustedProxyConfig;
 
-    public AuditLoggingFilter(AuditEventService service) {
+    public AuditLoggingFilter(AuditEventService service, TrustedProxyConfig trustedProxyConfig) {
         this.service = service;
+        this.trustedProxyConfig = trustedProxyConfig;
     }
 
     @Override
@@ -27,14 +30,23 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
     }
 
     private String resolveClientIp(HttpServletRequest request) {
+        String remote = request.getRemoteAddr();
         String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) {
-            String ip = xff.split(",")[0].trim();
-            if (ip.matches("^[0-9a-fA-F:.]+$")) {
-                return ip;
-            }
+
+        if (xff == null || xff.isBlank()) {
+            return remote;
         }
-        return request.getRemoteAddr();
+
+        if (!trustedProxyConfig.isTrusted(remote)) {
+            return remote;
+        }
+
+        String ip = xff.split(",")[0].trim();
+        if (ip.matches("^[0-9a-fA-F:.]+$")) {
+            return ip;
+        }
+
+        return remote;
     }
 
     @Override
@@ -58,13 +70,13 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
             String ip = resolveClientIp(request);
 
             service.recordHttpEvent(
-                actor,
-                request.getMethod(),
-                request.getRequestURI(),
-                wrapped.getStatus(),
-                ip,
-                request.getHeader("User-Agent"),
-                durationMs
+                    actor,
+                    request.getMethod(),
+                    request.getRequestURI(),
+                    wrapped.getStatus(),
+                    ip,
+                    request.getHeader("User-Agent"),
+                    durationMs
             );
 
             wrapped.copyBodyToResponse();

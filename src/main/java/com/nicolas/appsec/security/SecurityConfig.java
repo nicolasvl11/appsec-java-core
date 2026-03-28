@@ -23,9 +23,9 @@ import java.util.stream.Collectors;
 public class SecurityConfig {
 
     @Bean
-    AuditLoggingFilter auditLoggingFilter(AuditEventService service) {
-        return new AuditLoggingFilter(service);
-    }
+    AuditLoggingFilter auditLoggingFilter(AuditEventService service, TrustedProxyConfig trustedProxyConfig) {
+        return new AuditLoggingFilter(service, trustedProxyConfig);
+}
 
     @Bean
     InMemoryRateLimiter rateLimiter() {

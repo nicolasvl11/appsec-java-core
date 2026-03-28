@@ -31,3 +31,16 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local artifacts
+*.log
+logs/
+out.txt
+run.log
+*.tmp
+
+# Personal / temp files
+HANDOFF.txt
+TEST_OUTPUT.txt
+handoff.sh
+tatus

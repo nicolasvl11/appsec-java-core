@@ -11,7 +11,7 @@ Backend project for an Application Security portfolio with production-style fund
 - Flyway
 - Docker Compose
 - Maven Wrapper
-- GitHub Actions, pending
+- GitHub Actions
 
 ## What this project shows
 
@@ -103,7 +103,18 @@ Blocked responses also include:
 
 HTTP 429
 Retry-After
-JSON body with error=rate_limited
+Content type application/problem+json
+
+Example rate limit error body:
+
+{
+  "type": "about:blank",
+  "title": "Too Many Requests",
+  "status": 429,
+  "detail": "Rate limit exceeded for this client and endpoint.",
+  "path": "/api/v1/ping",
+  "retryAfterSeconds": 12
+}
 
 Rate-limited requests are still written to the audit log.
 
@@ -143,4 +154,4 @@ Rules
 Finish features before starting new ones
 Keep changes small and testable
 Update the README when behavior changes
-Do not commit stray files or logs   
+Do not commit stray files or logs

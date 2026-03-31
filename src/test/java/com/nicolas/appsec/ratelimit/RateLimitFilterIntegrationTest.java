@@ -15,6 +15,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = PingController.class)
@@ -132,7 +133,7 @@ class RateLimitFilterIntegrationTest {
     }
 
     @Test
-    void blocked_response_returns_expected_json_body() throws Exception {
+    void blocked_response_returns_expected_problem_detail_body() throws Exception {
         doNothing().when(auditEventService).recordHttpEvent(
                 anyString(), anyString(), anyString(), anyInt(), anyString(), anyString(), anyLong()
         );
@@ -160,7 +161,11 @@ class RateLimitFilterIntegrationTest {
         .andExpect(status().isTooManyRequests())
         .andExpect(header().exists("Retry-After"))
         .andExpect(header().string("RateLimit-Remaining", "0"))
-        .andExpect(content().contentType("application/json"))
-        .andExpect(content().json("{\"error\":\"rate_limited\"}", false));
+        .andExpect(content().contentType("application/problem+json"))
+        .andExpect(jsonPath("$.title").value("Too Many Requests"))
+        .andExpect(jsonPath("$.status").value(429))
+        .andExpect(jsonPath("$.detail").value("Rate limit exceeded for this client and endpoint."))
+        .andExpect(jsonPath("$.retryAfterSeconds").exists())
+        .andExpect(jsonPath("$.path").value("/api/v1/ping"));
     }
 }

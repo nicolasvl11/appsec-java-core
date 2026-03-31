@@ -1,9 +1,11 @@
 package com.nicolas.appsec.ratelimit;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.ProblemDetail;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -12,10 +14,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private final InMemoryRateLimiter limiter;
     private final TrustedProxyConfig trustedProxyConfig;
+    private final ObjectMapper objectMapper;
 
-    public RateLimitFilter(InMemoryRateLimiter limiter, TrustedProxyConfig trustedProxyConfig) {
+    public RateLimitFilter(
+            InMemoryRateLimiter limiter,
+            TrustedProxyConfig trustedProxyConfig,
+            ObjectMapper objectMapper
+    ) {
         this.limiter = limiter;
         this.trustedProxyConfig = trustedProxyConfig;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -60,8 +68,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (!d.allowed()) {
             response.setStatus(429);
             response.setHeader("Retry-After", String.valueOf(d.retryAfterSeconds()));
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"rate_limited\",\"retryAfterSeconds\":" + d.retryAfterSeconds() + "}");
+            response.setContentType("application/problem+json");
+
+            ProblemDetail problem = ProblemDetail.forStatus(429);
+            problem.setTitle("Too Many Requests");
+            problem.setDetail("Rate limit exceeded for this client and endpoint.");
+            problem.setProperty("retryAfterSeconds", d.retryAfterSeconds());
+            problem.setProperty("path", request.getRequestURI());
+
+            objectMapper.writeValue(response.getWriter(), problem);
             return;
         }
 

@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.Clock;
 import java.util.Arrays;
@@ -45,9 +46,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    RateLimitFilter rateLimitFilter(InMemoryRateLimiter limiter, TrustedProxyConfig trustedProxyConfig) {
-        return new RateLimitFilter(limiter, trustedProxyConfig);
-    }
+    RateLimitFilter rateLimitFilter(
+        InMemoryRateLimiter limiter,
+        TrustedProxyConfig trustedProxyConfig,
+        ObjectMapper objectMapper
+) {
+    return new RateLimitFilter(limiter, trustedProxyConfig, objectMapper);
+}
 
     @Bean
     SecurityFilterChain securityFilterChain(

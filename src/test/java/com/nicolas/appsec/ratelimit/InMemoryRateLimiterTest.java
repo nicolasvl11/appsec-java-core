@@ -59,7 +59,7 @@ class InMemoryRateLimiterTest {
         assertThat(limiter.allow("k", limit, windowSeconds).allowed()).isTrue();
         assertThat(limiter.allow("k", limit, windowSeconds).allowed()).isFalse();
 
-        clock.setInstant(Instant.ofEpochSecond(1020 + 40));
+        clock.setInstant(Instant.ofEpochSecond(1060));
 
         InMemoryRateLimiter.Decision afterReset = limiter.allow("k", limit, windowSeconds);
 

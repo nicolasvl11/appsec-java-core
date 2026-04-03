@@ -34,6 +34,56 @@ Protected with Basic Auth:
 Ops:
 - `GET /actuator/health`
 
+```md
+Protected with role ADMIN:
+- `GET /api/v1/admin`
+
+## Security error responses
+
+Protected endpoints return `application/problem+json` for security-related errors.
+
+### 401 Unauthorized
+
+Returned when authentication is missing.
+
+Example:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "Authentication is required to access this resource.",
+  "path": "/api/v1/audit-events/recent"
+}
+403 Forbidden
+
+Returned when the user is authenticated but does not have permission.
+
+Example:
+
+{
+  "type": "about:blank",
+  "title": "Forbidden",
+  "status": 403,
+  "detail": "You do not have permission to access this resource.",
+  "path": "/api/v1/admin"
+}
+429 Too Many Requests
+
+Returned when the client exceeds the configured rate limit.
+
+Example:
+
+{
+  "type": "about:blank",
+  "title": "Too Many Requests",
+  "status": 429,
+  "detail": "Rate limit exceeded for this client and endpoint.",
+  "path": "/api/v1/ping",
+  "retryAfterSeconds": 12
+}
+
 ## Local setup
 
 ### 1. Start PostgreSQL

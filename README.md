@@ -31,12 +31,11 @@ Public:
 Protected with Basic Auth:
 - `GET /api/v1/audit-events/recent`
 
+Protected with role `ADMIN`:
+- `GET /api/v1/admin`
+
 Ops:
 - `GET /actuator/health`
-
-```md
-Protected with role ADMIN:
-- `GET /api/v1/admin`
 
 ## Security error responses
 
@@ -83,12 +82,8 @@ Example:
   "path": "/api/v1/ping",
   "retryAfterSeconds": 12
 }
-
-## Local setup
-
-### 1. Start PostgreSQL
-
-```bash
+Local setup
+1. Start PostgreSQL
 docker compose up -d
 docker ps
 2. Run the application
@@ -173,6 +168,8 @@ Ping
 curl -i http://localhost:8080/api/v1/ping
 Recent audit events
 curl -i -u dev:devpass http://localhost:8080/api/v1/audit-events/recent
+Admin endpoint
+curl -i -u dev:devpass http://localhost:8080/api/v1/admin
 Rate limit headers
 curl -s -i -H "X-Forwarded-For: 203.0.113.10" http://localhost:8080/api/v1/ping | head -n 20
 Trigger 429

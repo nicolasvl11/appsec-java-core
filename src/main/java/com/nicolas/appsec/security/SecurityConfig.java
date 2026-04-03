@@ -83,8 +83,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/ping").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/api/v1/admin").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
+                
                 .httpBasic(Customizer.withDefaults());
 
         http.addFilterAfter(auditLoggingFilter, BasicAuthenticationFilter.class);

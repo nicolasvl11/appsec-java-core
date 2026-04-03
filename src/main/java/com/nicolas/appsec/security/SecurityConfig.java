@@ -1,5 +1,6 @@
 package com.nicolas.appsec.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nicolas.appsec.audit.AuditEventService;
 import com.nicolas.appsec.audit.AuditLoggingFilter;
 import com.nicolas.appsec.ratelimit.InMemoryRateLimiter;
@@ -13,7 +14,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.Clock;
 import java.util.Arrays;
@@ -26,7 +26,7 @@ public class SecurityConfig {
     @Bean
     AuditLoggingFilter auditLoggingFilter(AuditEventService service, TrustedProxyConfig trustedProxyConfig) {
         return new AuditLoggingFilter(service, trustedProxyConfig);
-}
+    }
 
     @Bean
     InMemoryRateLimiter rateLimiter() {
@@ -47,23 +47,39 @@ public class SecurityConfig {
 
     @Bean
     RateLimitFilter rateLimitFilter(
-        InMemoryRateLimiter limiter,
-        TrustedProxyConfig trustedProxyConfig,
-        ObjectMapper objectMapper
-) {
-    return new RateLimitFilter(limiter, trustedProxyConfig, objectMapper);
-}
+            InMemoryRateLimiter limiter,
+            TrustedProxyConfig trustedProxyConfig,
+            ObjectMapper objectMapper
+    ) {
+        return new RateLimitFilter(limiter, trustedProxyConfig, objectMapper);
+    }
+
+    @Bean
+    RestAuthenticationEntryPoint restAuthenticationEntryPoint(ObjectMapper objectMapper) {
+        return new RestAuthenticationEntryPoint(objectMapper);
+    }
+
+    @Bean
+    RestAccessDeniedHandler restAccessDeniedHandler(ObjectMapper objectMapper) {
+        return new RestAccessDeniedHandler(objectMapper);
+    }
 
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             AuditLoggingFilter auditLoggingFilter,
-            RateLimitFilter rateLimitFilter
+            RateLimitFilter rateLimitFilter,
+            RestAuthenticationEntryPoint restAuthenticationEntryPoint,
+            RestAccessDeniedHandler restAccessDeniedHandler
     ) throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(restAuthenticationEntryPoint)
+                        .accessDeniedHandler(restAccessDeniedHandler)
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/ping").permitAll()
                         .requestMatchers("/actuator/health").permitAll()

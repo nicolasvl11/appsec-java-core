@@ -18,6 +18,7 @@ Backend project for an Application Security portfolio with production-style fund
 - Clean backend structure
 - Basic authentication for protected endpoints
 - Audit logging of HTTP requests
+- Request ID generation and propagation for traceability
 - In-memory rate limiting by IP and endpoint
 - Trusted proxy handling for `X-Forwarded-For`
 - Reproducible local setup with Docker
@@ -129,6 +130,18 @@ method
 status
 userAgent
 durationMs
+requestId
+Request ID tracing
+
+Each request receives an X-Request-Id header.
+
+If the client sends X-Request-Id, the application echoes it back.
+If the header is missing, the application generates one.
+The request ID is also stored in the audit event metadata.
+
+Example:
+
+curl -i http://localhost:8080/api/v1/ping
 Rate limiting
 
 The application applies in-memory rate limiting per IP and endpoint using a fixed 60-second window.
@@ -170,6 +183,8 @@ Recent audit events
 curl -i -u dev:devpass http://localhost:8080/api/v1/audit-events/recent
 Admin endpoint
 curl -i -u dev:devpass http://localhost:8080/api/v1/admin
+Ping with custom request ID
+curl -i -H "X-Request-Id: req-123" http://localhost:8080/api/v1/ping
 Rate limit headers
 curl -s -i -H "X-Forwarded-For: 203.0.113.10" http://localhost:8080/api/v1/ping | head -n 20
 Trigger 429

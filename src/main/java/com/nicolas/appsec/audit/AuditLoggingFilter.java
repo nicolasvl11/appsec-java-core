@@ -1,6 +1,7 @@
 package com.nicolas.appsec.audit;
 
 import com.nicolas.appsec.ratelimit.TrustedProxyConfig;
+import com.nicolas.appsec.security.RequestIdFilter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -68,6 +69,7 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
             }
 
             String ip = resolveClientIp(request);
+            String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTRIBUTE);
 
             service.recordHttpEvent(
                     actor,
@@ -76,7 +78,8 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
                     wrapped.getStatus(),
                     ip,
                     request.getHeader("User-Agent"),
-                    durationMs
+                    durationMs,
+                    requestId
             );
 
             wrapped.copyBodyToResponse();

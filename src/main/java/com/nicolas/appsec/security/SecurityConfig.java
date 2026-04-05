@@ -55,6 +55,11 @@ public class SecurityConfig {
     }
 
     @Bean
+    RequestIdFilter requestIdFilter() {
+        return new RequestIdFilter();
+    }
+
+    @Bean
     RestAuthenticationEntryPoint restAuthenticationEntryPoint(ObjectMapper objectMapper) {
         return new RestAuthenticationEntryPoint(objectMapper);
     }
@@ -70,7 +75,8 @@ public class SecurityConfig {
             AuditLoggingFilter auditLoggingFilter,
             RateLimitFilter rateLimitFilter,
             RestAuthenticationEntryPoint restAuthenticationEntryPoint,
-            RestAccessDeniedHandler restAccessDeniedHandler
+            RestAccessDeniedHandler restAccessDeniedHandler,
+            RequestIdFilter requestIdFilter
     ) throws Exception {
 
         http
@@ -86,9 +92,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
-                
                 .httpBasic(Customizer.withDefaults());
 
+        http.addFilterBefore(requestIdFilter, BasicAuthenticationFilter.class);
         http.addFilterAfter(auditLoggingFilter, BasicAuthenticationFilter.class);
         http.addFilterAfter(rateLimitFilter, AuditLoggingFilter.class);
 

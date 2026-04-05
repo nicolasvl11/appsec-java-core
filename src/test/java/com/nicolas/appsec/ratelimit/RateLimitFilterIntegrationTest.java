@@ -31,7 +31,7 @@ class RateLimitFilterIntegrationTest {
     @Test
     void ping_hits_429_after_30_requests_for_same_ip() throws Exception {
         doNothing().when(auditEventService).recordHttpEvent(
-                anyString(), anyString(), anyString(), anyInt(), anyString(), anyString(), anyLong()
+                anyString(), anyString(), anyString(), anyInt(), anyString(), anyString(), anyLong(), anyString()
         );
 
         for (int i = 0; i < 30; i++) {
@@ -65,7 +65,7 @@ class RateLimitFilterIntegrationTest {
     @Test
     void xff_is_ignored_when_proxy_is_not_trusted() throws Exception {
         doNothing().when(auditEventService).recordHttpEvent(
-                anyString(), anyString(), anyString(), anyInt(), anyString(), anyString(), anyLong()
+                anyString(), anyString(), anyString(), anyInt(), anyString(), anyString(), anyLong(), anyString()
         );
 
         for (int i = 0; i < 30; i++) {
@@ -95,7 +95,7 @@ class RateLimitFilterIntegrationTest {
     @Test
     void trusted_proxy_uses_xff_and_keeps_counters_separate_per_client_ip() throws Exception {
         doNothing().when(auditEventService).recordHttpEvent(
-                anyString(), anyString(), anyString(), anyInt(), anyString(), anyString(), anyLong()
+                anyString(), anyString(), anyString(), anyInt(), anyString(), anyString(), anyLong(), anyString()
         );
 
         for (int i = 0; i < 30; i++) {
@@ -135,7 +135,7 @@ class RateLimitFilterIntegrationTest {
     @Test
     void blocked_response_returns_expected_problem_detail_body() throws Exception {
         doNothing().when(auditEventService).recordHttpEvent(
-                anyString(), anyString(), anyString(), anyInt(), anyString(), anyString(), anyLong()
+                anyString(), anyString(), anyString(), anyInt(), anyString(), anyString(), anyLong(), anyString()
         );
 
         for (int i = 0; i < 30; i++) {

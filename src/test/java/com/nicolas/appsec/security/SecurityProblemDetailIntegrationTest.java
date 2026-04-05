@@ -1,8 +1,8 @@
 package com.nicolas.appsec.security;
 
 import com.nicolas.appsec.audit.AuditEventController;
+import com.nicolas.appsec.audit.AuditEventRepository;
 import com.nicolas.appsec.audit.AuditEventService;
-import com.nicolas.appsec.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -26,7 +26,7 @@ class SecurityProblemDetailIntegrationTest {
     AuditEventService auditEventService;
 
     @MockBean
-    com.nicolas.appsec.audit.AuditEventRepository auditEventRepository;
+    AuditEventRepository auditEventRepository;
 
     @Test
     void protected_endpoint_without_credentials_returns_401_problem_detail() throws Exception {

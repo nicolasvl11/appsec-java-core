@@ -20,20 +20,30 @@ public class AuditEventService {
     }
 
     @Transactional
-    public void recordHttpEvent(String actor, String method, String path, int status, String ip, String userAgent, long durationMs) {
+    public void recordHttpEvent(
+            String actor,
+            String method,
+            String path,
+            int status,
+            String ip,
+            String userAgent,
+            long durationMs,
+            String requestId
+    ) {
         AuditEvent e = new AuditEvent();
         e.setEventTime(Instant.now());
         e.setActor(actor == null || actor.isBlank() ? "anonymous" : actor);
         e.setAction("http_request");
         e.setTarget(path);
 
-                try {
+        try {
             JsonNode metaJson = mapper.valueToTree(Map.of(
-                "method", method,
-                "status", status,
-                "ip", ip == null ? "" : ip,
-                "userAgent", userAgent == null ? "" : userAgent,
-                "durationMs", durationMs
+                    "method", method,
+                    "status", status,
+                    "ip", ip == null ? "" : ip,
+                    "userAgent", userAgent == null ? "" : userAgent,
+                    "durationMs", durationMs,
+                    "requestId", requestId == null ? "" : requestId
             ));
             e.setMeta(metaJson);
         } catch (Exception ex) {

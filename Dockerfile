@@ -4,6 +4,7 @@ WORKDIR /workspace
 
 COPY mvnw .
 COPY .mvn .mvn
+RUN chmod +x mvnw
 COPY pom.xml .
 RUN ./mvnw dependency:go-offline -B -q
 

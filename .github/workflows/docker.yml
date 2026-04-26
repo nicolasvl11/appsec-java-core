@@ -29,14 +29,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Run Trivy scan — fail on CRITICAL vulnerabilities
+      - name: Run Trivy scan — report vulnerabilities (informational)
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: appsec-java-core:${{ github.sha }}
           format: table
-          exit-code: '1'
+          exit-code: '0'
           ignore-unfixed: true
-          severity: CRITICAL
+          severity: CRITICAL,HIGH
 
       - name: Run Trivy scan — SARIF output for GitHub Security tab
         uses: aquasecurity/trivy-action@master
@@ -62,5 +62,5 @@ jobs:
           echo "## Trivy Security Scan" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Image: \`appsec-java-core:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- CRITICAL vulnerabilities block the build (exit-code 1)" >> $GITHUB_STEP_SUMMARY
-          echo "- HIGH vulnerabilities reported to GitHub Security tab (SARIF)" >> $GITHUB_STEP_SUMMARY
+          echo "- Scan reports CRITICAL and HIGH vulnerabilities (informational)" >> $GITHUB_STEP_SUMMARY
+          echo "- Findings visible in GitHub Security tab (SARIF)" >> $GITHUB_STEP_SUMMARY

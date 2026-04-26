@@ -1,10 +1,12 @@
 package com.nicolas.appsec.api;
 
+import com.nicolas.appsec.auth.UsernameAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -41,6 +43,26 @@ public class GlobalExceptionHandler {
         problem.setType(URI.create("about:blank"));
         problem.setProperty("path", request.getRequestURI());
         problem.setProperty("errors", errors);
+        return problem;
+    }
+
+    @ExceptionHandler(UsernameAlreadyExistsException.class)
+    public ProblemDetail handleUsernameConflict(UsernameAlreadyExistsException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problem.setTitle("Conflict");
+        problem.setDetail(ex.getMessage());
+        problem.setType(URI.create("about:blank"));
+        problem.setProperty("path", request.getRequestURI());
+        return problem;
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ProblemDetail handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
+        problem.setTitle("Unauthorized");
+        problem.setDetail("Invalid username or password.");
+        problem.setType(URI.create("about:blank"));
+        problem.setProperty("path", request.getRequestURI());
         return problem;
     }
 

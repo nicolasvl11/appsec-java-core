@@ -1,0 +1,327 @@
+From 021bd059b68e9fa12d49061a777eeed545dfb218 Mon Sep 17 00:00:00 2001
+From: Nicolas Velasquez <nicolas.velasquez1233@gmail.com>
+Date: Sat, 18 Apr 2026 05:45:55 +0000
+Subject: [PATCH] feat(phase1): security headers, MDC correlation, global 404
+ handler
+
+- SecurityConfig: add X-Content-Type-Options, X-Frame-Options DENY,
+  HSTS (1yr + subdomains), Cache-Control, Content-Security-Policy via
+  StaticHeadersWriter
+- RequestIdFilter: wire requestId into MDC on every request so all
+  log lines carry requestId automatically; cleanup in finally block
+- GlobalExceptionHandler: consistent ProblemDetail for 404
+  (NoHandlerFoundException + NoResourceFoundException), 400 validation
+  errors with field-level error list, and generic 500 fallback
+- application.properties: enable throw-exception-if-no-handler-found
+  and disable default resource mappings so 404 reaches the handler
+- Tests:
+  SecurityHeadersIntegrationTest - verifies 5 headers on 200 and 401
+  GlobalExceptionHandlerIntegrationTest - verifies 404 returns JSON
+    ProblemDetail with status/title/path fields
+  AuditLoggingIntegrationTest - extended with requestId-in-meta and
+    method/status assertions (Testcontainers, RUN_TC=true)
+---
+ .../appsec/api/GlobalExceptionHandler.java    | 58 +++++++++++++++++++
+ .../appsec/security/RequestIdFilter.java      |  9 ++-
+ .../appsec/security/SecurityConfig.java       | 13 +++++
+ src/main/resources/application.properties     |  4 ++
+ ...GlobalExceptionHandlerIntegrationTest.java | 42 ++++++++++++++
+ .../audit/AuditLoggingIntegrationTest.java    | 29 ++++++++++
+ .../SecurityHeadersIntegrationTest.java       | 50 ++++++++++++++++
+ 7 files changed, 204 insertions(+), 1 deletion(-)
+ create mode 100644 src/main/java/com/nicolas/appsec/api/GlobalExceptionHandler.java
+ create mode 100644 src/test/java/com/nicolas/appsec/api/GlobalExceptionHandlerIntegrationTest.java
+ create mode 100644 src/test/java/com/nicolas/appsec/security/SecurityHeadersIntegrationTest.java
+
+diff --git a/src/main/java/com/nicolas/appsec/api/GlobalExceptionHandler.java b/src/main/java/com/nicolas/appsec/api/GlobalExceptionHandler.java
+new file mode 100644
+index 0000000..f04b309
+--- /dev/null
++++ b/src/main/java/com/nicolas/appsec/api/GlobalExceptionHandler.java
+@@ -0,0 +1,58 @@
++package com.nicolas.appsec.api;
++
++import jakarta.servlet.http.HttpServletRequest;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++import org.springframework.http.HttpStatus;
++import org.springframework.http.ProblemDetail;
++import org.springframework.web.bind.MethodArgumentNotValidException;
++import org.springframework.web.bind.annotation.ExceptionHandler;
++import org.springframework.web.bind.annotation.RestControllerAdvice;
++import org.springframework.web.servlet.NoHandlerFoundException;
++import org.springframework.web.servlet.resource.NoResourceFoundException;
++
++import java.net.URI;
++import java.util.List;
++
++@RestControllerAdvice
++public class GlobalExceptionHandler {
++
++    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
++
++    @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})
++    public ProblemDetail handleNotFound(Exception ex, HttpServletRequest request) {
++        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
++        problem.setTitle("Not Found");
++        problem.setDetail("No endpoint registered for: " + request.getMethod() + " " + request.getRequestURI());
++        problem.setType(URI.create("about:blank"));
++        problem.setProperty("path", request.getRequestURI());
++        return problem;
++    }
++
++    @ExceptionHandler(MethodArgumentNotValidException.class)
++    public ProblemDetail handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
++        List<String> errors = ex.getBindingResult().getFieldErrors().stream()
++                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
++                .toList();
++
++        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
++        problem.setTitle("Validation Failed");
++        problem.setDetail("One or more fields failed validation.");
++        problem.setType(URI.create("about:blank"));
++        problem.setProperty("path", request.getRequestURI());
++        problem.setProperty("errors", errors);
++        return problem;
++    }
++
++    @ExceptionHandler(Exception.class)
++    public ProblemDetail handleGeneric(Exception ex, HttpServletRequest request) {
++        log.error("Unhandled exception on {} {}", request.getMethod(), request.getRequestURI(), ex);
++
++        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
++        problem.setTitle("Internal Server Error");
++        problem.setDetail("An unexpected error occurred. Please try again later.");
++        problem.setType(URI.create("about:blank"));
++        problem.setProperty("path", request.getRequestURI());
++        return problem;
++    }
++}
+diff --git a/src/main/java/com/nicolas/appsec/security/RequestIdFilter.java b/src/main/java/com/nicolas/appsec/security/RequestIdFilter.java
+index 5d20797..8f7dd18 100644
+--- a/src/main/java/com/nicolas/appsec/security/RequestIdFilter.java
++++ b/src/main/java/com/nicolas/appsec/security/RequestIdFilter.java
+@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
+ import jakarta.servlet.ServletException;
+ import jakarta.servlet.http.HttpServletRequest;
+ import jakarta.servlet.http.HttpServletResponse;
++import org.slf4j.MDC;
+ import org.springframework.web.filter.OncePerRequestFilter;
+ 
+ import java.io.IOException;
+@@ -13,6 +14,7 @@ public class RequestIdFilter extends OncePerRequestFilter {
+ 
+     public static final String REQUEST_ID_HEADER = "X-Request-Id";
+     public static final String REQUEST_ID_ATTRIBUTE = "requestId";
++    public static final String MDC_KEY = "requestId";
+ 
+     @Override
+     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+@@ -27,6 +29,11 @@ public class RequestIdFilter extends OncePerRequestFilter {
+         request.setAttribute(REQUEST_ID_ATTRIBUTE, requestId);
+         response.setHeader(REQUEST_ID_HEADER, requestId);
+ 
+-        filterChain.doFilter(request, response);
++        MDC.put(MDC_KEY, requestId);
++        try {
++            filterChain.doFilter(request, response);
++        } finally {
++            MDC.remove(MDC_KEY);
++        }
+     }
+ }
+\ No newline at end of file
+diff --git a/src/main/java/com/nicolas/appsec/security/SecurityConfig.java b/src/main/java/com/nicolas/appsec/security/SecurityConfig.java
+index c4c6a70..b08d413 100644
+--- a/src/main/java/com/nicolas/appsec/security/SecurityConfig.java
++++ b/src/main/java/com/nicolas/appsec/security/SecurityConfig.java
+@@ -14,6 +14,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+ import org.springframework.security.config.http.SessionCreationPolicy;
+ import org.springframework.security.web.SecurityFilterChain;
+ import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
++import org.springframework.security.web.header.writers.StaticHeadersWriter;
+ 
+ import java.time.Clock;
+ import java.util.Arrays;
+@@ -82,6 +83,18 @@ public class SecurityConfig {
+         http
+                 .csrf(csrf -> csrf.disable())
+                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
++                .headers(headers -> headers
++                        .contentTypeOptions(Customizer.withDefaults())
++                        .frameOptions(frame -> frame.deny())
++                        .httpStrictTransportSecurity(hsts -> hsts
++                                .includeSubDomains(true)
++                                .maxAgeInSeconds(31_536_000)
++                        )
++                        .cacheControl(Customizer.withDefaults())
++                        .addHeaderWriter(new StaticHeadersWriter(
++                                "Content-Security-Policy", "default-src 'self'"
++                        ))
++                )
+                 .exceptionHandling(ex -> ex
+                         .authenticationEntryPoint(restAuthenticationEntryPoint)
+                         .accessDeniedHandler(restAccessDeniedHandler)
+diff --git a/src/main/resources/application.properties b/src/main/resources/application.properties
+index 833ed3c..4093157 100644
+--- a/src/main/resources/application.properties
++++ b/src/main/resources/application.properties
+@@ -14,3 +14,7 @@ spring.security.user.password=devpass
+ spring.security.user.roles=ADMIN
+ 
+ app.trusted-proxies=127.0.0.1,::1
++
++# Throw NoHandlerFoundException for unknown routes so GlobalExceptionHandler can produce ProblemDetail
++spring.mvc.throw-exception-if-no-handler-found=true
++spring.web.resources.add-mappings=false
+diff --git a/src/test/java/com/nicolas/appsec/api/GlobalExceptionHandlerIntegrationTest.java b/src/test/java/com/nicolas/appsec/api/GlobalExceptionHandlerIntegrationTest.java
+new file mode 100644
+index 0000000..35a3223
+--- /dev/null
++++ b/src/test/java/com/nicolas/appsec/api/GlobalExceptionHandlerIntegrationTest.java
+@@ -0,0 +1,42 @@
++package com.nicolas.appsec.api;
++
++import com.nicolas.appsec.audit.AuditEventService;
++import com.nicolas.appsec.security.SecurityConfig;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
++import org.springframework.boot.test.mock.mockito.MockBean;
++import org.springframework.context.annotation.Import;
++import org.springframework.test.web.servlet.MockMvc;
++
++import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
++
++@WebMvcTest(controllers = {PingController.class, AdminController.class})
++@Import(SecurityConfig.class)
++class GlobalExceptionHandlerIntegrationTest {
++
++    @Autowired
++    MockMvc mvc;
++
++    @MockBean
++    AuditEventService auditEventService;
++
++    @Test
++    void unknown_route_returns_404_problem_detail() throws Exception {
++        mvc.perform(get("/api/v1/does-not-exist"))
++                .andExpect(status().isNotFound())
++                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
++                .andExpect(jsonPath("$.status").value(404))
++                .andExpect(jsonPath("$.title").value("Not Found"))
++                .andExpect(jsonPath("$.path").value("/api/v1/does-not-exist"));
++    }
++
++    @Test
++    void unknown_route_returns_json_not_html() throws Exception {
++        mvc.perform(get("/completely/unknown/path"))
++                .andExpect(status().isNotFound())
++                .andExpect(jsonPath("$.status").value(404))
++                .andExpect(jsonPath("$.title").value("Not Found"));
++    }
++}
+diff --git a/src/test/java/com/nicolas/appsec/audit/AuditLoggingIntegrationTest.java b/src/test/java/com/nicolas/appsec/audit/AuditLoggingIntegrationTest.java
+index 37ad7ab..a6e4a3e 100644
+--- a/src/test/java/com/nicolas/appsec/audit/AuditLoggingIntegrationTest.java
++++ b/src/test/java/com/nicolas/appsec/audit/AuditLoggingIntegrationTest.java
+@@ -12,6 +12,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
+ import org.testcontainers.junit.jupiter.Container;
+ import org.testcontainers.junit.jupiter.Testcontainers;
+ 
++import java.util.List;
++
+ import static org.assertj.core.api.Assertions.assertThat;
+ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+@@ -45,4 +47,31 @@ class AuditLoggingIntegrationTest {
+         long after = repo.count();
+         assertThat(after).isGreaterThan(before);
+     }
++
++    @Test
++    void audit_event_meta_contains_request_id() throws Exception {
++        String clientRequestId = "test-req-" + System.currentTimeMillis();
++
++        mvc.perform(get("/api/v1/ping").header("X-Request-Id", clientRequestId))
++           .andExpect(status().isOk());
++
++        List<AuditEvent> events = repo.findAll();
++        AuditEvent latest = events.get(events.size() - 1);
++
++        assertThat(latest.getMeta()).isNotNull();
++        assertThat(latest.getMeta().get("requestId").asText()).isEqualTo(clientRequestId);
++    }
++
++    @Test
++    void audit_event_meta_contains_method_and_status() throws Exception {
++        mvc.perform(get("/api/v1/ping"))
++           .andExpect(status().isOk());
++
++        List<AuditEvent> events = repo.findAll();
++        AuditEvent latest = events.get(events.size() - 1);
++
++        assertThat(latest.getMeta().get("method").asText()).isEqualTo("GET");
++        assertThat(latest.getMeta().get("status").asInt()).isEqualTo(200);
++        assertThat(latest.getMeta().get("requestId").asText()).isNotBlank();
++    }
+ }
+diff --git a/src/test/java/com/nicolas/appsec/security/SecurityHeadersIntegrationTest.java b/src/test/java/com/nicolas/appsec/security/SecurityHeadersIntegrationTest.java
+new file mode 100644
+index 0000000..a224f26
+--- /dev/null
++++ b/src/test/java/com/nicolas/appsec/security/SecurityHeadersIntegrationTest.java
+@@ -0,0 +1,50 @@
++package com.nicolas.appsec.security;
++
++import com.nicolas.appsec.api.PingController;
++import com.nicolas.appsec.audit.AuditEventService;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
++import org.springframework.boot.test.mock.mockito.MockBean;
++import org.springframework.context.annotation.Import;
++import org.springframework.test.web.servlet.MockMvc;
++
++import static org.mockito.ArgumentMatchers.*;
++import static org.mockito.Mockito.doNothing;
++import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
++
++@WebMvcTest(controllers = PingController.class)
++@Import(SecurityConfig.class)
++class SecurityHeadersIntegrationTest {
++
++    @Autowired
++    MockMvc mvc;
++
++    @MockBean
++    AuditEventService auditEventService;
++
++    @Test
++    void security_headers_are_present_on_public_endpoint() throws Exception {
++        doNothing().when(auditEventService).recordHttpEvent(
++                anyString(), anyString(), anyString(), anyInt(), anyString(), anyString(), anyLong(), anyString()
++        );
++
++        mvc.perform(get("/api/v1/ping"))
++                .andExpect(status().isOk())
++                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
++                .andExpect(header().string("X-Frame-Options", "DENY"))
++                .andExpect(header().exists("Strict-Transport-Security"))
++                .andExpect(header().string("Content-Security-Policy", "default-src 'self'"));
++    }
++
++    @Test
++    void security_headers_are_present_on_401_response() throws Exception {
++        mvc.perform(get("/api/v1/admin"))
++                .andExpect(status().isUnauthorized())
++                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
++                .andExpect(header().string("X-Frame-Options", "DENY"))
++                .andExpect(header().string("Content-Security-Policy", "default-src 'self'"));
++    }
++}
+-- 
+2.43.0

@@ -11,7 +11,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import com.nicolas.appsec.ratelimit.InMemoryRateLimiter;
 import com.nicolas.appsec.ratelimit.RateLimiter;
 import com.nicolas.appsec.ratelimit.RateLimitFilter;
+import com.nicolas.appsec.ratelimit.RedisRateLimiter;
 import com.nicolas.appsec.ratelimit.TrustedProxyConfig;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,6 +33,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -85,7 +88,16 @@ public class SecurityConfig {
     }
 
     @Bean
-    InMemoryRateLimiter rateLimiter() {
+    RateLimiter rateLimiter(
+            @Value("${app.ratelimit.type:memory}") String type,
+            Optional<StringRedisTemplate> redisTemplate
+    ) {
+        if ("redis".equalsIgnoreCase(type)) {
+            return new RedisRateLimiter(
+                    redisTemplate.orElseThrow(() ->
+                            new IllegalStateException("app.ratelimit.type=redis requires spring-data-redis")),
+                    Clock.systemUTC());
+        }
         return new InMemoryRateLimiter(Clock.systemUTC());
     }
 

@@ -191,6 +191,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/v1/admin").hasRole("ADMIN")
                         .requestMatchers("/api/v1/users/**").authenticated()
                         .requestMatchers("/api/v1/audit-events/**").authenticated()

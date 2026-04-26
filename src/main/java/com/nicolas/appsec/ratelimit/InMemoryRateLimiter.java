@@ -5,15 +5,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class InMemoryRateLimiter {
-
-    public record Decision(
-            boolean allowed,
-            long retryAfterSeconds,
-            int limit,
-            int remaining,
-            long resetEpochSeconds
-    ) {}
+public class InMemoryRateLimiter implements RateLimiter {
 
     private record Window(long windowStartEpochSec, int count) {}
 
@@ -24,19 +16,20 @@ public class InMemoryRateLimiter {
         this.clock = clock;
     }
 
+    @Override
     public Decision allow(String key, int limit, int windowSeconds) {
         long now = Instant.now(clock).getEpochSecond();
         long windowStart = now - (now % windowSeconds);
         long reset = windowStart + windowSeconds;
 
         Window updated = store.compute(key, (k, existing) -> {
-            if (existing == null || existing.windowStartEpochSec != windowStart) {
+            if (existing == null || existing.windowStartEpochSec() != windowStart) {
                 return new Window(windowStart, 1);
             }
-            return new Window(existing.windowStartEpochSec, existing.count + 1);
+            return new Window(existing.windowStartEpochSec(), existing.count() + 1);
         });
 
-        int used = updated.count;
+        int used = updated.count();
         int remaining = Math.max(0, limit - used);
 
         if (used <= limit) {

@@ -12,12 +12,12 @@ import java.io.IOException;
 
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private final InMemoryRateLimiter limiter;
+    private final RateLimiter limiter;
     private final TrustedProxyConfig trustedProxyConfig;
     private final ObjectMapper objectMapper;
 
     public RateLimitFilter(
-            InMemoryRateLimiter limiter,
+            RateLimiter limiter,
             TrustedProxyConfig trustedProxyConfig,
             ObjectMapper objectMapper
     ) {

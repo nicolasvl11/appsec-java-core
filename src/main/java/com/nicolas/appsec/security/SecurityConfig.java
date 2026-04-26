@@ -6,6 +6,7 @@ import com.nicolas.appsec.audit.AuditLoggingFilter;
 import com.nicolas.appsec.auth.JwtAuthenticationFilter;
 import com.nicolas.appsec.auth.JwtService;
 import com.nicolas.appsec.ratelimit.InMemoryRateLimiter;
+import com.nicolas.appsec.ratelimit.RateLimiter;
 import com.nicolas.appsec.ratelimit.RateLimitFilter;
 import com.nicolas.appsec.ratelimit.TrustedProxyConfig;
 import org.springframework.beans.factory.annotation.Value;
@@ -92,7 +93,7 @@ public class SecurityConfig {
 
     @Bean
     RateLimitFilter rateLimitFilter(
-            InMemoryRateLimiter limiter,
+            RateLimiter limiter,
             TrustedProxyConfig trustedProxyConfig,
             ObjectMapper objectMapper
     ) {

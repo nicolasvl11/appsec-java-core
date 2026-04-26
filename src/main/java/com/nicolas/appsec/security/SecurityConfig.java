@@ -5,6 +5,8 @@ import com.nicolas.appsec.audit.AuditEventService;
 import com.nicolas.appsec.audit.AuditLoggingFilter;
 import com.nicolas.appsec.auth.JwtAuthenticationFilter;
 import com.nicolas.appsec.auth.JwtService;
+import com.nicolas.appsec.auth.OAuth2LoginSuccessHandler;
+import com.nicolas.appsec.auth.UserService;
 import com.nicolas.appsec.observability.SecurityMetrics;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -17,6 +19,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -24,6 +28,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -62,6 +67,15 @@ public class SecurityConfig {
     @Bean
     JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService) {
         return new JwtAuthenticationFilter(jwtService, userDetailsService);
+    }
+
+    @Bean
+    OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler(
+            @Lazy UserService userService,
+            JwtService jwtService,
+            @Value("${app.oauth2.redirect-uri:http://localhost:3000/oauth2/redirect}") String redirectUri
+    ) {
+        return new OAuth2LoginSuccessHandler(userService, jwtService, redirectUri);
     }
 
     @Bean
@@ -146,13 +160,15 @@ public class SecurityConfig {
             RestAccessDeniedHandler restAccessDeniedHandler,
             RequestIdFilter requestIdFilter,
             JwtAuthenticationFilter jwtAuthenticationFilter,
-            CorsConfigurationSource corsConfigurationSource
+            CorsConfigurationSource corsConfigurationSource,
+            OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler
     ) throws Exception {
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // IF_REQUIRED allows a session only during the OAuth2 flow; JWT API calls are sessionless.
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .headers(headers -> headers
                         .contentTypeOptions(Customizer.withDefaults())
                         .frameOptions(frame -> frame.deny())
@@ -174,10 +190,18 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/ping").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                         .requestMatchers("/api/v1/admin").hasRole("ADMIN")
                         .requestMatchers("/api/v1/users/**").authenticated()
                         .requestMatchers("/api/v1/audit-events/**").authenticated()
+                        .requestMatchers("/api/v1/oauth2/**").authenticated()
                         .anyRequest().permitAll()
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2LoginSuccessHandler)
+                        .failureHandler((req, res, ex) ->
+                                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
+                                        .commence(req, res, null))
                 );
 
         // Filter ordering: RequestId → JWT → [Spring Security] → AuditLogging → RateLimit

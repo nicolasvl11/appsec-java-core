@@ -1,20 +1,34 @@
 package com.nicolas.appsec.auth;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.util.Base64;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class JwtServiceTest {
 
-    // Base64 of "this-is-a-very-secret-jwt-key-for-dev" (37 bytes = 296 bits, valid for HS256)
-    private static final String SECRET = "dGhpcy1pcy1hLXZlcnktc2VjcmV0LWp3dC1rZXktZm9yLWRldg==";
+    static String privateKeyB64;
+    static String publicKeyB64;
 
-    private JwtService jwtService;
+    @BeforeAll
+    static void generateKeyPair() throws Exception {
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+        gen.initialize(2048);
+        KeyPair pair = gen.generateKeyPair();
+        privateKeyB64 = Base64.getEncoder().encodeToString(pair.getPrivate().getEncoded());
+        publicKeyB64 = Base64.getEncoder().encodeToString(pair.getPublic().getEncoded());
+    }
+
+    JwtService jwtService;
 
     @BeforeEach
     void setUp() {
-        jwtService = new JwtService(SECRET, 86_400_000L);
+        jwtService = new JwtService(privateKeyB64, publicKeyB64, 86_400_000L);
     }
 
     @Test
@@ -31,7 +45,7 @@ class JwtServiceTest {
 
     @Test
     void expired_token_is_invalid() {
-        JwtService shortLived = new JwtService(SECRET, -1L); // expiry in the past
+        JwtService shortLived = new JwtService(privateKeyB64, publicKeyB64, -1L);
         String token = shortLived.generateToken("alice", "USER");
         assertThat(jwtService.isValid(token)).isFalse();
     }
@@ -46,5 +60,19 @@ class JwtServiceTest {
     @Test
     void garbage_string_is_invalid() {
         assertThat(jwtService.isValid("not.a.jwt")).isFalse();
+    }
+
+    @Test
+    void token_signed_with_different_key_is_invalid() throws Exception {
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+        gen.initialize(2048);
+        KeyPair other = gen.generateKeyPair();
+        JwtService otherService = new JwtService(
+                Base64.getEncoder().encodeToString(other.getPrivate().getEncoded()),
+                Base64.getEncoder().encodeToString(other.getPublic().getEncoded()),
+                86_400_000L
+        );
+        String foreignToken = otherService.generateToken("alice", "USER");
+        assertThat(jwtService.isValid(foreignToken)).isFalse();
     }
 }

@@ -3,19 +3,31 @@ package com.nicolas.appsec.auth;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
 
-import javax.crypto.SecretKey;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.Date;
 
 public class JwtService {
 
-    private final SecretKey key;
+    private final PrivateKey privateKey;
+    private final PublicKey publicKey;
     private final long expirationMs;
 
-    public JwtService(String base64Secret, long expirationMs) {
-        this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(base64Secret));
+    public JwtService(String base64PrivateKey, String base64PublicKey, long expirationMs) {
+        try {
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            this.privateKey = kf.generatePrivate(
+                    new PKCS8EncodedKeySpec(Base64.getDecoder().decode(base64PrivateKey)));
+            this.publicKey = kf.generatePublic(
+                    new X509EncodedKeySpec(Base64.getDecoder().decode(base64PublicKey)));
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to load RSA key pair for JWT", e);
+        }
         this.expirationMs = expirationMs;
     }
 
@@ -26,7 +38,7 @@ public class JwtService {
                 .claim("role", role)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expirationMs))
-                .signWith(key)
+                .signWith(privateKey)
                 .compact();
     }
 
@@ -45,7 +57,7 @@ public class JwtService {
 
     private Claims parseClaims(String token) {
         return Jwts.parser()
-                .verifyWith(key)
+                .verifyWith(publicKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();

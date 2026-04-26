@@ -40,10 +40,11 @@ public class SecurityConfig {
 
     @Bean
     JwtService jwtService(
-            @Value("${app.jwt.secret}") String secret,
+            @Value("${app.jwt.private-key}") String privateKey,
+            @Value("${app.jwt.public-key}") String publicKey,
             @Value("${app.jwt.expiration-ms:86400000}") long expirationMs
     ) {
-        return new JwtService(secret, expirationMs);
+        return new JwtService(privateKey, publicKey, expirationMs);
     }
 
     @Bean

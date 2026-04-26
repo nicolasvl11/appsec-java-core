@@ -31,7 +31,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         if (path.startsWith("/actuator")) return true;
 
-        return !(path.equals("/api/v1/ping") || path.equals("/api/v1/audit-events/recent"));
+        return !(path.equals("/api/v1/ping")
+              || path.equals("/api/v1/audit-events/recent")
+              || path.startsWith("/api/v1/auth/"));
     }
 
     private String resolveClientIp(HttpServletRequest request) {
@@ -56,7 +58,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String ip = resolveClientIp(request);
 
         int windowSeconds = 60;
-        int limit = path.equals("/api/v1/ping") ? 30 : 10;
+        int limit = switch (path) {
+            case "/api/v1/ping" -> 30;
+            case "/api/v1/auth/login", "/api/v1/auth/register" -> 5;
+            default -> 10;
+        };
 
         String key = path + "|" + ip;
         InMemoryRateLimiter.Decision d = limiter.allow(key, limit, windowSeconds);

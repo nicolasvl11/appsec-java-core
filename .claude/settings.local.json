@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn test *)",
+      "Bash(./mvnw test *)",
+      "Bash(cat *)",
+      "Read(//c/Users/nicol/claude-mem/**)",
+      "Bash(npm install *)",
+      "Bash(npm link *)",
+      "Bash(sed -n '90,130p' /c/Users/nicol/claude-mem/scripts/build-hooks.js)",
+      "Bash(sed -n '200,230p' /c/Users/nicol/claude-mem/scripts/build-hooks.js)",
+      "Bash(node scripts/sync-plugin-manifests.js)",
+      "Bash(node scripts/build-hooks.js)",
+      "Bash(claude-mem --version)",
+      "Bash(claude-mem --help)",
+      "Skill(update-config)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}

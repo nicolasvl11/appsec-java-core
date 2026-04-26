@@ -1,5 +1,6 @@
 package com.nicolas.appsec.audit;
 
+import com.nicolas.appsec.observability.SecurityMetrics;
 import com.nicolas.appsec.ratelimit.TrustedProxyConfig;
 import com.nicolas.appsec.security.RequestIdFilter;
 import jakarta.servlet.FilterChain;
@@ -18,10 +19,13 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
 
     private final AuditEventService service;
     private final TrustedProxyConfig trustedProxyConfig;
+    private final SecurityMetrics metrics;
 
-    public AuditLoggingFilter(AuditEventService service, TrustedProxyConfig trustedProxyConfig) {
+    public AuditLoggingFilter(AuditEventService service, TrustedProxyConfig trustedProxyConfig,
+                               SecurityMetrics metrics) {
         this.service = service;
         this.trustedProxyConfig = trustedProxyConfig;
+        this.metrics = metrics;
     }
 
     @Override
@@ -70,6 +74,11 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
 
             String ip = resolveClientIp(request);
             String requestId = (String) request.getAttribute(RequestIdFilter.REQUEST_ID_ATTRIBUTE);
+
+            metrics.incrementHttpRequests();
+            if (wrapped.getStatus() == 401) {
+                metrics.incrementAuthFailures();
+            }
 
             service.recordHttpEvent(
                     actor,

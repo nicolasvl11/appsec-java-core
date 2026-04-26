@@ -1,6 +1,7 @@
 package com.nicolas.appsec.ratelimit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nicolas.appsec.observability.SecurityMetrics;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,15 +16,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final RateLimiter limiter;
     private final TrustedProxyConfig trustedProxyConfig;
     private final ObjectMapper objectMapper;
+    private final SecurityMetrics metrics;
 
     public RateLimitFilter(
             RateLimiter limiter,
             TrustedProxyConfig trustedProxyConfig,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            SecurityMetrics metrics
     ) {
         this.limiter = limiter;
         this.trustedProxyConfig = trustedProxyConfig;
         this.objectMapper = objectMapper;
+        this.metrics = metrics;
     }
 
     @Override
@@ -72,6 +76,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         response.setHeader("RateLimit-Reset", String.valueOf(d.resetEpochSeconds()));
 
         if (!d.allowed()) {
+            metrics.incrementRateLimitBlocked();
             response.setStatus(429);
             response.setHeader("Retry-After", String.valueOf(d.retryAfterSeconds()));
             response.setContentType("application/problem+json");

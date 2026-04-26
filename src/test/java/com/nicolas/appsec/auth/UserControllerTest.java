@@ -37,7 +37,7 @@ class UserControllerTest {
     @WithMockUser(username = "alice")
     void get_me_returns_profile() throws Exception {
         when(userService.getProfile("alice"))
-                .thenReturn(new UserProfileResponse(1L, "alice", "USER", Instant.parse("2025-01-01T00:00:00Z")));
+                .thenReturn(new UserProfileResponse(1L, "alice", "USER", Instant.parse("2025-01-01T00:00:00Z"), null, null));
 
         mvc.perform(get("/api/v1/users/me"))
                 .andExpect(status().isOk())

@@ -5,6 +5,9 @@ import com.nicolas.appsec.audit.AuditEventService;
 import com.nicolas.appsec.audit.AuditLoggingFilter;
 import com.nicolas.appsec.auth.JwtAuthenticationFilter;
 import com.nicolas.appsec.auth.JwtService;
+import com.nicolas.appsec.observability.SecurityMetrics;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import com.nicolas.appsec.ratelimit.InMemoryRateLimiter;
 import com.nicolas.appsec.ratelimit.RateLimiter;
 import com.nicolas.appsec.ratelimit.RateLimitFilter;
@@ -33,6 +36,11 @@ import java.util.stream.Collectors;
 
 @Configuration
 public class SecurityConfig {
+
+    @Bean
+    SecurityMetrics securityMetrics(java.util.Optional<MeterRegistry> registry) {
+        return new SecurityMetrics(registry.orElseGet(SimpleMeterRegistry::new));
+    }
 
     @Bean
     PasswordEncoder passwordEncoder() {
@@ -71,8 +79,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    AuditLoggingFilter auditLoggingFilter(AuditEventService service, TrustedProxyConfig trustedProxyConfig) {
-        return new AuditLoggingFilter(service, trustedProxyConfig);
+    AuditLoggingFilter auditLoggingFilter(AuditEventService service, TrustedProxyConfig trustedProxyConfig,
+                                           SecurityMetrics metrics) {
+        return new AuditLoggingFilter(service, trustedProxyConfig, metrics);
     }
 
     @Bean
@@ -95,9 +104,10 @@ public class SecurityConfig {
     RateLimitFilter rateLimitFilter(
             RateLimiter limiter,
             TrustedProxyConfig trustedProxyConfig,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            SecurityMetrics metrics
     ) {
-        return new RateLimitFilter(limiter, trustedProxyConfig, objectMapper);
+        return new RateLimitFilter(limiter, trustedProxyConfig, objectMapper, metrics);
     }
 
     @Bean

@@ -19,6 +19,7 @@ export default function RegisterPage() {
     try {
       const res = await authService.register(username, password);
       authService.saveToken(res.data.token);
+      authService.saveRefreshToken(res.data.refreshToken);
       navigate('/dashboard');
     } catch (err) {
       const detail = err.response?.data?.detail;
@@ -33,8 +34,9 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Username</label>
+            <label htmlFor="reg-username" className="block text-sm font-medium text-gray-700">Username</label>
             <input
+              id="reg-username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -43,8 +45,9 @@ export default function RegisterPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <label htmlFor="reg-password" className="block text-sm font-medium text-gray-700">Password</label>
             <input
+              id="reg-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -54,8 +57,9 @@ export default function RegisterPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Confirm password</label>
+            <label htmlFor="reg-confirm" className="block text-sm font-medium text-gray-700">Confirm password</label>
             <input
+              id="reg-confirm"
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}

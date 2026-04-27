@@ -1,6 +1,8 @@
 package com.nicolas.appsec.api;
 
+import com.nicolas.appsec.auth.AccountLockedException;
 import com.nicolas.appsec.auth.UsernameAlreadyExistsException;
+import org.springframework.http.ResponseEntity;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -45,6 +47,19 @@ public class GlobalExceptionHandler {
         problem.setProperty("path", request.getRequestURI());
         problem.setProperty("errors", errors);
         return problem;
+    }
+
+    @ExceptionHandler(AccountLockedException.class)
+    public ResponseEntity<ProblemDetail> handleAccountLocked(AccountLockedException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(423);
+        problem.setTitle("Account Locked");
+        problem.setDetail(ex.getMessage());
+        problem.setType(URI.create("about:blank"));
+        problem.setProperty("path", request.getRequestURI());
+        problem.setProperty("retryAfterSeconds", ex.getRetryAfterSeconds());
+        return ResponseEntity.status(423)
+                .header("Retry-After", String.valueOf(ex.getRetryAfterSeconds()))
+                .body(problem);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)

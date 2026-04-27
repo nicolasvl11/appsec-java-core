@@ -1,2 +1,17 @@
-/mvnw text eol=lf
+# Normalize all text files to LF in the repository
+* text=auto eol=lf
+
+# Windows-specific scripts keep CRLF
+*.bat text eol=crlf
 *.cmd text eol=crlf
+
+# Maven wrapper must be LF so it runs in Linux containers
+/mvnw text eol=lf
+
+# Binary — never touch line endings
+*.png binary
+*.jpg binary
+*.ico binary
+*.jar binary
+*.class binary
+*.svg binary

@@ -1,0 +1,106 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: appsec-alerts
+    folder: AppSec
+    interval: 1m
+    rules:
+      - uid: rate-limit-spike
+        title: High Rate-Limit Rate (429)
+        condition: C
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than 10 rate-limited requests per minute"
+          description: "{{ $labels.instance }} is returning 429 at {{ $values.C.Value | humanize }} req/min"
+        data:
+          - refId: A
+            datasourceUid: "Prometheus"
+            model:
+              expr: rate(http_server_requests_seconds_count{status="429"}[1m]) * 60
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              conditions:
+                - evaluator:
+                    params: [10]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    type: last
+              refId: C
+              type: classic_conditions
+
+      - uid: auth-failure-spike
+        title: High Authentication Failure Rate (401)
+        condition: C
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Potential credential-stuffing attack detected"
+          description: "More than 20 failed auth requests per minute"
+        data:
+          - refId: A
+            datasourceUid: "Prometheus"
+            model:
+              expr: rate(http_server_requests_seconds_count{status="401",uri=~".*auth.*"}[1m]) * 60
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              conditions:
+                - evaluator:
+                    params: [20]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    type: last
+              refId: C
+              type: classic_conditions
+
+      - uid: high-error-rate
+        title: High HTTP Error Rate (5xx)
+        condition: C
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service is returning 5xx errors"
+          description: "Error rate is {{ $values.C.Value | humanize }} req/min"
+        data:
+          - refId: A
+            datasourceUid: "Prometheus"
+            model:
+              expr: rate(http_server_requests_seconds_count{status=~"5.."}[1m]) * 60
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: C
+            datasourceUid: "__expr__"
+            model:
+              conditions:
+                - evaluator:
+                    params: [5]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    type: last
+              refId: C
+              type: classic_conditions

@@ -13,11 +13,21 @@ public class AuthService implements UserDetailsService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final LoginAttemptService loginAttemptService;
+    private final RefreshTokenService refreshTokenService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
+    public AuthService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService,
+            LoginAttemptService loginAttemptService,
+            RefreshTokenService refreshTokenService
+    ) {
+        this.userRepository      = userRepository;
+        this.passwordEncoder     = passwordEncoder;
+        this.jwtService          = jwtService;
+        this.loginAttemptService = loginAttemptService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Override
@@ -30,23 +40,45 @@ public class AuthService implements UserDetailsService {
         if (userRepository.existsByUsername(request.username())) {
             throw new UsernameAlreadyExistsException(request.username());
         }
-        User user = new User(
-                request.username(),
-                passwordEncoder.encode(request.password()),
-                Role.USER
-        );
+        User user = new User(request.username(), passwordEncoder.encode(request.password()), Role.USER);
         userRepository.save(user);
-        String token = jwtService.generateToken(user.getUsername(), user.getRole().name());
-        return new AuthResponse(token, user.getUsername(), user.getRole().name());
+
+        String access  = jwtService.generateToken(user.getUsername(), user.getRole().name());
+        String refresh = refreshTokenService.generate(user.getUsername());
+        return new AuthResponse(access, refresh, user.getUsername(), user.getRole().name());
     }
 
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.username())
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+        if (loginAttemptService.isLocked(request.username())) {
+            throw new AccountLockedException(loginAttemptService.getRetryAfterSeconds(request.username()));
+        }
+
+        User user = userRepository.findByUsername(request.username()).orElse(null);
+
+        // Always attempt password check to prevent user-enumeration via timing
+        if (user == null || !passwordEncoder.matches(request.password(), user.getPassword())) {
+            loginAttemptService.recordFailure(request.username());
+            if (loginAttemptService.isLocked(request.username())) {
+                throw new AccountLockedException(loginAttemptService.getRetryAfterSeconds(request.username()));
+            }
             throw new BadCredentialsException("Invalid credentials");
         }
-        String token = jwtService.generateToken(user.getUsername(), user.getRole().name());
-        return new AuthResponse(token, user.getUsername(), user.getRole().name());
+
+        loginAttemptService.reset(request.username());
+        String access  = jwtService.generateToken(user.getUsername(), user.getRole().name());
+        String refresh = refreshTokenService.generate(user.getUsername());
+        return new AuthResponse(access, refresh, user.getUsername(), user.getRole().name());
+    }
+
+    public AuthResponse refresh(String rawRefreshToken) {
+        String username = refreshTokenService.verify(rawRefreshToken);
+        refreshTokenService.revoke(rawRefreshToken);
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BadCredentialsException("User not found"));
+
+        String newAccess   = jwtService.generateToken(username, user.getRole().name());
+        String newRefresh  = refreshTokenService.generate(username);
+        return new AuthResponse(newAccess, newRefresh, username, user.getRole().name());
     }
 }

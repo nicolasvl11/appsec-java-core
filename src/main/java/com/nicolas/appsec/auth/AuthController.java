@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -17,9 +18,13 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtService jwtService;
+    private final JwtBlacklistService blacklistService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, JwtService jwtService, JwtBlacklistService blacklistService) {
         this.authService = authService;
+        this.jwtService = jwtService;
+        this.blacklistService = blacklistService;
     }
 
     @PostMapping("/register")
@@ -47,5 +52,24 @@ public class AuthController {
     })
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Logout — invalidate JWT",
+            description = "Blacklists the Bearer token so it cannot be reused before its natural expiry.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Token invalidated"),
+            @ApiResponse(responseCode = "401", description = "No valid token provided")
+    })
+    public void logout(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header == null || !header.startsWith("Bearer ")) {
+            return;
+        }
+        String token = header.substring(7);
+        if (jwtService.isValid(token)) {
+            blacklistService.blacklist(jwtService.extractJti(token), jwtService.extractExpiration(token));
+        }
     }
 }

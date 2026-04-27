@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import LoginPage from './components/LoginPage';
+import RegisterPage from './components/RegisterPage';
 import AuditDashboard from './components/AuditDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import { authService } from './services/authService';
@@ -27,6 +28,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
         <Route
           path="/dashboard"

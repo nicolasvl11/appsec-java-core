@@ -2,6 +2,7 @@ package com.nicolas.appsec.api;
 
 import com.nicolas.appsec.auth.UsernameAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -40,6 +41,21 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
         problem.setTitle("Validation Failed");
         problem.setDetail("One or more fields failed validation.");
+        problem.setType(URI.create("about:blank"));
+        problem.setProperty("path", request.getRequestURI());
+        problem.setProperty("errors", errors);
+        return problem;
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ProblemDetail handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
+        List<String> errors = ex.getConstraintViolations().stream()
+                .map(cv -> cv.getPropertyPath() + ": " + cv.getMessage())
+                .toList();
+
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problem.setTitle("Validation Failed");
+        problem.setDetail("One or more parameters failed validation.");
         problem.setType(URI.create("about:blank"));
         problem.setProperty("path", request.getRequestURI());
         problem.setProperty("errors", errors);

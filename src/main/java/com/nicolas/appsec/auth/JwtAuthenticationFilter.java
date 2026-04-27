@@ -13,15 +13,22 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Optional;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final Optional<JwtBlacklistService> blacklistService;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(
+            JwtService jwtService,
+            UserDetailsService userDetailsService,
+            Optional<JwtBlacklistService> blacklistService
+    ) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
+        this.blacklistService = blacklistService;
     }
 
     @Override
@@ -39,6 +46,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = header.substring(7);
         if (!jwtService.isValid(token)) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        String jti = jwtService.extractJti(token);
+        if (jti != null && blacklistService.map(b -> b.isBlacklisted(jti)).orElse(false)) {
             chain.doFilter(request, response);
             return;
         }

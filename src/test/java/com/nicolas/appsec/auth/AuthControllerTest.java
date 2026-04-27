@@ -1,10 +1,10 @@
 package com.nicolas.appsec.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nicolas.appsec.audit.AuditEventService;
 import com.nicolas.appsec.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.nicolas.appsec.audit.AuditEventService;
 import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -13,8 +13,11 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
+
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -27,6 +30,7 @@ class AuthControllerTest {
 
     @MockBean AuditEventService auditEventService;
     @MockBean AuthService authService;
+    @MockBean JwtBlacklistService blacklistService;
 
     // ── register ────────────────────────────────────────────────────────────
 
@@ -118,5 +122,24 @@ class AuthControllerTest {
                 .content(objectMapper.writeValueAsString(new LoginRequest("", ""))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors").isArray());
+    }
+
+    // ── logout ───────────────────────────────────────────────────────────────
+
+    @Test
+    void logout_with_no_token_returns_204() throws Exception {
+        mvc.perform(post("/api/v1/auth/logout"))
+                .andExpect(status().isNoContent());
+
+        verifyNoInteractions(blacklistService);
+    }
+
+    @Test
+    void logout_with_invalid_token_skips_blacklist() throws Exception {
+        mvc.perform(post("/api/v1/auth/logout")
+                .header("Authorization", "Bearer not.a.real.token"))
+                .andExpect(status().isNoContent());
+
+        verifyNoInteractions(blacklistService);
     }
 }

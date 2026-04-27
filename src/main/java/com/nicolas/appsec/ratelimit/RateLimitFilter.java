@@ -69,7 +69,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         };
 
         String key = path + "|" + ip;
-        InMemoryRateLimiter.Decision d = limiter.allow(key, limit, windowSeconds);
+        RateLimiter.Decision d = limiter.allow(key, limit, windowSeconds);
 
         response.setHeader("RateLimit-Limit", String.valueOf(d.limit()));
         response.setHeader("RateLimit-Remaining", String.valueOf(d.remaining()));

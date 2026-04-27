@@ -1,11 +1,9 @@
-import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import LoginPage from './components/LoginPage';
 import AuditDashboard from './components/AuditDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import { authService } from './services/authService';
-import './index.css';
 
 function OAuth2Redirect() {
   const [params] = useSearchParams();
@@ -19,7 +17,7 @@ function OAuth2Redirect() {
     } else {
       navigate('/login', { replace: true });
     }
-  }, []);
+  }, [navigate, params]);
 
   return <p className="text-center mt-10 text-gray-500">Completing login...</p>;
 }

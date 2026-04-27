@@ -1,21 +1,11 @@
 package com.nicolas.appsec.ratelimit;
 
 /**
- * Sliding-window rate limiter contract.
+ * Fixed-window rate limiter contract.
  *
- * <p>Current implementation: {@link InMemoryRateLimiter} — suitable for a single-instance
- * deployment. A Redis-backed implementation would look like:
- *
- * <pre>
- * class RedisRateLimiter implements RateLimiter {
- *     // Uses a Lua script executed atomically via EVALSHA for increment + TTL.
- *     // Key: "rl:{path}:{ip}", value: sliding counter, TTL = windowSeconds.
- *     // Guarantees correctness under horizontal scale-out with no local state.
- * }
- * </pre>
- *
- * <p>To swap implementations: replace the {@code @Bean InMemoryRateLimiter} in
- * {@code SecurityConfig} with a {@code RedisRateLimiter} bean — no other code changes needed.
+ * <p>Two implementations: {@link InMemoryRateLimiter} for single-instance deployments and
+ * {@link RedisRateLimiter} for horizontal scale-out (atomic Lua script, no TOCTOU gap).
+ * Selected at runtime via {@code app.ratelimit.type} ({@code memory} or {@code redis}).
  */
 public interface RateLimiter {
 

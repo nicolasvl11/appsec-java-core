@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.time.Instant;
 import java.util.Base64;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,6 +61,28 @@ class JwtServiceTest {
     @Test
     void garbage_string_is_invalid() {
         assertThat(jwtService.isValid("not.a.jwt")).isFalse();
+    }
+
+    @Test
+    void extract_jti_is_non_blank_uuid() {
+        String token = jwtService.generateToken("alice", "USER");
+        String jti = jwtService.extractJti(token);
+        assertThat(jti).isNotBlank();
+        assertThat(jti).matches("[0-9a-f\\-]{36}");
+    }
+
+    @Test
+    void two_tokens_have_different_jti() {
+        String t1 = jwtService.generateToken("alice", "USER");
+        String t2 = jwtService.generateToken("alice", "USER");
+        assertThat(jwtService.extractJti(t1)).isNotEqualTo(jwtService.extractJti(t2));
+    }
+
+    @Test
+    void extract_expiration_is_in_the_future() {
+        String token = jwtService.generateToken("alice", "USER");
+        Instant expiry = jwtService.extractExpiration(token);
+        assertThat(expiry).isAfter(Instant.now());
     }
 
     @Test

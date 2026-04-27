@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nicolas.appsec.audit.AuditEventService;
 import com.nicolas.appsec.audit.AuditLoggingFilter;
 import com.nicolas.appsec.auth.JwtAuthenticationFilter;
+import com.nicolas.appsec.auth.JwtBlacklistService;
 import com.nicolas.appsec.auth.JwtService;
 import com.nicolas.appsec.auth.OAuth2LoginSuccessHandler;
 import com.nicolas.appsec.auth.UserService;
@@ -65,8 +66,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService) {
-        return new JwtAuthenticationFilter(jwtService, userDetailsService);
+    JwtAuthenticationFilter jwtAuthenticationFilter(
+            JwtService jwtService,
+            UserDetailsService userDetailsService,
+            Optional<JwtBlacklistService> blacklistService
+    ) {
+        return new JwtAuthenticationFilter(jwtService, userDetailsService, blacklistService);
     }
 
     @Bean

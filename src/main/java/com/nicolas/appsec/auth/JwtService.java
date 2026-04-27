@@ -9,8 +9,10 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
+import java.util.UUID;
 
 public class JwtService {
 
@@ -36,6 +38,7 @@ public class JwtService {
         return Jwts.builder()
                 .subject(username)
                 .claim("role", role)
+                .id(UUID.randomUUID().toString())
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expirationMs))
                 .signWith(privateKey)
@@ -44,6 +47,14 @@ public class JwtService {
 
     public String extractUsername(String token) {
         return parseClaims(token).getSubject();
+    }
+
+    public String extractJti(String token) {
+        return parseClaims(token).getId();
+    }
+
+    public Instant extractExpiration(String token) {
+        return parseClaims(token).getExpiration().toInstant();
     }
 
     public boolean isValid(String token) {

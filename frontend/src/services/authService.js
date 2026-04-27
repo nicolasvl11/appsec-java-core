@@ -9,20 +9,25 @@ export const authService = {
     return apiClient.post('/api/v1/auth/register', { username, password });
   },
 
-  exchangeOAuthCode(code) {
-    return apiClient.post(`/api/v1/auth/callback?code=${encodeURIComponent(code)}`);
-  },
-
   saveToken(token) {
     localStorage.setItem('jwt', token);
+  },
+
+  saveRefreshToken(token) {
+    localStorage.setItem('refreshToken', token);
   },
 
   getToken() {
     return localStorage.getItem('jwt');
   },
 
+  getRefreshToken() {
+    return localStorage.getItem('refreshToken');
+  },
+
   logout() {
     localStorage.removeItem('jwt');
+    localStorage.removeItem('refreshToken');
   },
 
   isAuthenticated() {

@@ -11,6 +11,19 @@
   --color-text-subtle: #6b7280;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #f9fafb;
+    --color-secondary: #818cf8;
+    --color-accent: #f472b6;
+    --color-bg: #09090d;
+    --color-surface: #111118;
+    --color-border: #1e1e2e;
+    --color-text: #e5e7eb;
+    --color-text-subtle: #6b7280;
+  }
+}
+
 body {
   margin: 0;
   font-family: 'DM Sans', sans-serif;
@@ -35,6 +48,17 @@ input:focus::placeholder {
   opacity: 0.4;
 }
 
+input:focus {
+  border-color: var(--color-secondary) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  input:focus {
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15) !important;
+  }
+}
+
 @keyframes slideInFromTop {
   from {
     opacity: 0;
@@ -55,6 +79,12 @@ input:focus::placeholder {
   }
 }
 
+@keyframes shimmer {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
 .animate-in {
   animation: slideInFromTop 0.3s ease-out;
 }
@@ -65,4 +95,9 @@ input:focus::placeholder {
 
 .slide-in-from-top-2 {
   animation: slideInFromTop 0.3s ease-out;
+}
+
+.skeleton-pulse {
+  animation: shimmer 1.5s ease-in-out infinite;
+  background-color: var(--color-border);
 }

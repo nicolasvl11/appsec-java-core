@@ -44,9 +44,9 @@ export default function AuditDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Audit Events</h1>
             {totalElements > 0 && (
@@ -55,7 +55,7 @@ export default function AuditDashboard() {
           </div>
           <button
             onClick={handleLogout}
-            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition text-sm"
+            className="w-full sm:w-auto bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition text-sm"
           >
             Logout
           </button>
@@ -66,7 +66,8 @@ export default function AuditDashboard() {
 
         {!loading && !error && (
           <>
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            {/* Table view for md+ */}
+            <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
               <table className="w-full text-sm text-left">
                 <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
                   <tr>
@@ -99,22 +100,56 @@ export default function AuditDashboard() {
               </table>
             </div>
 
+            {/* Card view for sm and md */}
+            <div className="md:hidden space-y-3">
+              {events.length === 0 ? (
+                <div className="text-center text-gray-400 py-8">
+                  No audit events found
+                </div>
+              ) : (
+                events.map((ev) => (
+                  <div key={ev.id} className="bg-white rounded-lg shadow p-4 space-y-2">
+                    <div>
+                      <p className="text-xs text-gray-500">Timestamp</p>
+                      <p className="text-sm font-medium text-gray-800">
+                        {new Date(ev.eventTime).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Actor</p>
+                        <p className="text-sm font-medium text-gray-800">{ev.actor}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Action</p>
+                        <p className="text-sm text-gray-600">{ev.action}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Target</p>
+                      <p className="text-sm text-gray-600 break-words">{ev.target}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4">
                 <button
                   onClick={() => setRequestedPage((p) => Math.max(0, p - 1))}
                   disabled={requestedPage === 0}
-                  className="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 text-center">
                   Page {requestedPage + 1} of {totalPages}
                 </span>
                 <button
                   onClick={() => setRequestedPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={requestedPage >= totalPages - 1}
-                  className="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>

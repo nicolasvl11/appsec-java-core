@@ -1,6 +1,68 @@
 @import "tailwindcss";
 
+:root {
+  --color-primary: #1a1a1a;
+  --color-secondary: #6366f1;
+  --color-accent: #ec4899;
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-border: #e5e7eb;
+  --color-text: #1f2937;
+  --color-text-subtle: #6b7280;
+}
+
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+input::placeholder {
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+input:focus::placeholder {
+  opacity: 0.4;
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-in {
+  animation: slideInFromTop 0.3s ease-out;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.slide-in-from-top-2 {
+  animation: slideInFromTop 0.3s ease-out;
 }

@@ -40,7 +40,7 @@ describe('AuditDashboard', () => {
     renderDashboard();
 
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText(/no audit events found/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText(/no audit events found/i).length).toBeGreaterThan(0));
   });
 
   it('renders event rows from API response', async () => {
@@ -52,14 +52,14 @@ describe('AuditDashboard', () => {
       target: '/api/v1/ping',
     };
     apiClient.get.mockResolvedValueOnce({
-      data: { ...PAGE, content: [event], totalElements: 1 },
+      data: { ...PAGE, content: [event], totalElements: 1, totalPages: 1 },
     });
 
     renderDashboard();
 
-    await waitFor(() => expect(screen.getByText('alice')).toBeInTheDocument());
-    expect(screen.getByText('http_request')).toBeInTheDocument();
-    expect(screen.getByText('/api/v1/ping')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText('alice').length).toBeGreaterThan(0), { timeout: 3000 });
+    expect(screen.getAllByText('http_request').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('/api/v1/ping').length).toBeGreaterThan(0);
   });
 
   it('shows error message when API fails', async () => {

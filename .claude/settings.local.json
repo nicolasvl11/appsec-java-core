@@ -37,7 +37,9 @@
       "Bash(npx skills *)",
       "Bash(git clone *)",
       "Bash(claude plugin *)",
-      "Bash(npm --prefix frontend test)"
+      "Bash(npm --prefix frontend test)",
+      "Bash(npm --prefix frontend test -- --reporter=verbose)",
+      "Bash(git commit -m 'feat\\(ui\\): mobile responsive AuditDashboard *)"
     ]
   },
   "model": "claude-sonnet-4-6",

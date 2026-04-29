@@ -2,7 +2,7 @@ import axios from 'axios';
 import { authService } from './authService';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8080',
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -14,13 +14,14 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+let refreshPromise = null;
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
     const isAuthEndpoint = original.url?.includes('/api/v1/auth/');
 
-    // For auth endpoints or already-retried requests, fail immediately
     if (error.response?.status !== 401 || isAuthEndpoint || original._retried) {
       if (error.response?.status === 401 && !isAuthEndpoint) {
         authService.logout();
@@ -38,17 +39,28 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    try {
-      const res = await apiClient.post('/api/v1/auth/refresh', { refreshToken });
-      authService.saveToken(res.data.token);
-      authService.saveRefreshToken(res.data.refreshToken);
-      original.headers['Authorization'] = `Bearer ${res.data.token}`;
-      return apiClient(original);
-    } catch {
-      authService.logout();
-      window.location.href = '/login';
-      return Promise.reject(error);
+    if (!refreshPromise) {
+      refreshPromise = apiClient
+        .post('/api/v1/auth/refresh', { refreshToken })
+        .then((res) => {
+          authService.saveToken(res.data.token);
+          authService.saveRefreshToken(res.data.refreshToken);
+          return res.data.token;
+        })
+        .catch((err) => {
+          authService.logout();
+          window.location.href = '/login';
+          throw err;
+        })
+        .finally(() => {
+          refreshPromise = null;
+        });
     }
+
+    return refreshPromise.then((token) => {
+      original.headers['Authorization'] = `Bearer ${token}`;
+      return apiClient(original);
+    });
   }
 );
 

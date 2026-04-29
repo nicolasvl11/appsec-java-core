@@ -4,6 +4,14 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { authService } from '../services/authService';
 
+const createValidJWT = (expiresIn = 3600) => {
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const now = Math.floor(Date.now() / 1000);
+  const payload = btoa(JSON.stringify({ sub: 'test', exp: now + expiresIn }));
+  const signature = 'test-sig';
+  return `${header}.${payload}.${signature}`;
+};
+
 function TestApp({ initialPath }) {
   return (
     <MemoryRouter initialEntries={[initialPath]}>
@@ -26,7 +34,7 @@ describe('ProtectedRoute', () => {
   beforeEach(() => localStorage.clear());
 
   it('renders children when authenticated', () => {
-    authService.saveToken('valid-token');
+    authService.saveToken(createValidJWT());
     render(<TestApp initialPath="/dashboard" />);
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });

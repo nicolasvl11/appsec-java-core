@@ -95,4 +95,48 @@ describe('AuditDashboard', () => {
 
     await waitFor(() => expect(screen.getByText('Login page')).toBeInTheDocument());
   });
+
+  it('filters events by actor', async () => {
+    const events = [
+      { id: 1, eventTime: '2024-01-01T00:00:00Z', actor: 'alice', action: 'login', target: '/auth' },
+      { id: 2, eventTime: '2024-01-02T00:00:00Z', actor: 'bob', action: 'logout', target: '/auth' },
+    ];
+    apiClient.get.mockResolvedValue({
+      data: { content: [events[0]], page: 0, size: 20, totalElements: 1, totalPages: 1 },
+    });
+
+    renderDashboard();
+    const actorInput = screen.getByPlaceholderText('Filter by actor...');
+    fireEvent.change(actorInput, { target: { value: 'alice' } });
+
+    await waitFor(() => {
+      expect(apiClient.get).toHaveBeenCalledWith(expect.stringContaining('actor=alice'));
+    });
+  });
+
+  it('filters events by action', async () => {
+    apiClient.get.mockResolvedValue({ data: PAGE });
+
+    renderDashboard();
+    const actionInput = screen.getByPlaceholderText('Filter by action...');
+    fireEvent.change(actionInput, { target: { value: 'login' } });
+
+    await waitFor(() => {
+      expect(apiClient.get).toHaveBeenCalledWith(expect.stringContaining('action=login'));
+    });
+  });
+
+  it('clears all filters on clear button click', async () => {
+    apiClient.get.mockResolvedValue({ data: PAGE });
+
+    renderDashboard();
+    const actorInput = screen.getByPlaceholderText('Filter by actor...');
+    fireEvent.change(actorInput, { target: { value: 'alice' } });
+
+    await waitFor(() => expect(screen.getByText(/filter.*active/i)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /clear/i }));
+
+    expect(actorInput.value).toBe('');
+    expect(apiClient.get).toHaveBeenCalledWith(expect.stringContaining('?page=0&size=20'));
+  });
 });

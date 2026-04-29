@@ -40,7 +40,10 @@
       "Bash(npm --prefix frontend test)",
       "Bash(npm --prefix frontend test -- --reporter=verbose)",
       "Bash(git commit -m 'feat\\(ui\\): mobile responsive AuditDashboard *)",
-      "Bash(git commit -m 'feat\\(ui\\): skeleton loader for better loading UX *)"
+      "Bash(git commit -m 'feat\\(ui\\): skeleton loader for better loading UX *)",
+      "Bash(pkill -f \"vite|node\")",
+      "Bash(pkill -f \"npx skills\")",
+      "Bash(git commit -m 'feat: search/filter, micro-interactions, refined aesthetics *)"
     ]
   },
   "model": "claude-sonnet-4-6",

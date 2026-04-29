@@ -142,9 +142,12 @@ export default function AuditDashboard() {
           error: '',
         });
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
-        setFetchResult({ key, events: [], totalPages: 0, totalElements: 0, error: 'Failed to load audit events' });
+        const msg = err?.response?.status === 429
+          ? 'Too many requests — slow down and retry'
+          : 'Failed to load audit events';
+        setFetchResult({ key, events: [], totalPages: 0, totalElements: 0, error: msg });
       });
     return () => { cancelled = true; };
   }, [requestedPage, debouncedActor, debouncedAction, debouncedTarget, retryKey]);

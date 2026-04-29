@@ -17,6 +17,9 @@ groups:
           description: "{{ $labels.instance }} is returning 429 at {{ $values.C.Value | humanize }} req/min"
         data:
           - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
             datasourceUid: "Prometheus"
             model:
               expr: rate(http_server_requests_seconds_count{status="429"}[1m]) * 60
@@ -24,6 +27,9 @@ groups:
               maxDataPoints: 43200
               refId: A
           - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
             datasourceUid: "__expr__"
             model:
               conditions:
@@ -50,6 +56,9 @@ groups:
           description: "More than 20 failed auth requests per minute"
         data:
           - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
             datasourceUid: "Prometheus"
             model:
               expr: rate(http_server_requests_seconds_count{status="401",uri=~".*auth.*"}[1m]) * 60
@@ -57,6 +66,9 @@ groups:
               maxDataPoints: 43200
               refId: A
           - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
             datasourceUid: "__expr__"
             model:
               conditions:
@@ -83,6 +95,9 @@ groups:
           description: "Error rate is {{ $values.C.Value | humanize }} req/min"
         data:
           - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
             datasourceUid: "Prometheus"
             model:
               expr: rate(http_server_requests_seconds_count{status=~"5.."}[1m]) * 60
@@ -90,6 +105,9 @@ groups:
               maxDataPoints: 43200
               refId: A
           - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
             datasourceUid: "__expr__"
             model:
               conditions:

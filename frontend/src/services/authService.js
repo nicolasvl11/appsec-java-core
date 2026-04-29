@@ -42,6 +42,22 @@ export const authService = {
     return localStorage.getItem('refreshToken');
   },
 
+  getUsername() {
+    const token = this.getToken();
+    if (!token) return null;
+    return decodeToken(token)?.sub ?? null;
+  },
+
+  getRole() {
+    const token = this.getToken();
+    if (!token) return null;
+    return decodeToken(token)?.role ?? null;
+  },
+
+  isAdmin() {
+    return this.getRole() === 'ADMIN';
+  },
+
   logout() {
     localStorage.removeItem('jwt');
     localStorage.removeItem('refreshToken');

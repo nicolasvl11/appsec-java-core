@@ -8,13 +8,17 @@ const PAGE_SIZE = 20;
 
 const ACTION_CONFIG = {
   login:             { bg: 'rgba(16,185,129,0.1)',   color: '#059669' },
+  login_success:     { bg: 'rgba(16,185,129,0.1)',   color: '#059669' },
   register:          { bg: 'rgba(16,185,129,0.1)',   color: '#059669' },
   logout:            { bg: 'rgba(107,114,128,0.12)', color: '#6b7280' },
+  login_failure:     { bg: 'rgba(239,68,68,0.1)',    color: '#dc2626' },
   permission_denied: { bg: 'rgba(239,68,68,0.1)',    color: '#dc2626' },
   unauthorized:      { bg: 'rgba(239,68,68,0.1)',    color: '#dc2626' },
   forbidden:         { bg: 'rgba(239,68,68,0.1)',    color: '#dc2626' },
   http_request:      { bg: 'rgba(99,102,241,0.1)',   color: '#6366f1' },
   token_refresh:     { bg: 'rgba(245,158,11,0.1)',   color: '#d97706' },
+  password_change:   { bg: 'rgba(245,158,11,0.1)',   color: '#d97706' },
+  role_change:       { bg: 'rgba(168,85,247,0.1)',   color: '#9333ea' },
 };
 
 function ActionBadge({ action }) {
@@ -185,13 +189,31 @@ export default function AuditDashboard() {
               </p>
             )}
           </div>
-          <button
-            onClick={handleLogout}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-semibold text-white transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-95 cursor-pointer"
-            style={{ backgroundColor: 'var(--color-accent)', fontSize: '0.875rem', letterSpacing: '0.025em' }}
-          >
-            Logout
-          </button>
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => navigate('/profile')}
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 hover:shadow-md active:scale-95 cursor-pointer border-2"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)', backgroundColor: 'var(--color-surface)' }}
+            >
+              Profile
+            </button>
+            {authService.isAdmin() && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-all duration-200 hover:shadow-md active:scale-95 cursor-pointer"
+                style={{ backgroundColor: 'var(--color-secondary)' }}
+              >
+                Admin
+              </button>
+            )}
+            <button
+              onClick={handleLogout}
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-lg font-semibold text-white transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-95 cursor-pointer"
+              style={{ backgroundColor: 'var(--color-accent)', fontSize: '0.875rem', letterSpacing: '0.025em' }}
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         {/* Filters */}

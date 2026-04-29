@@ -76,4 +76,8 @@ public class User implements UserDetails {
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
     }
+
+    public void updateRole(Role newRole) {
+        this.role = newRole;
+    }
 }

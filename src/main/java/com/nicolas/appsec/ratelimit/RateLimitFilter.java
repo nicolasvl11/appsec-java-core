@@ -66,6 +66,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             case "/api/v1/ping" -> 30;
             case "/api/v1/auth/login", "/api/v1/auth/register" -> 5;
             case "/api/v1/audit-events/recent" -> 120;
+            case "/api/v1/admin/users" -> 60;
             default -> 10;
         };
 

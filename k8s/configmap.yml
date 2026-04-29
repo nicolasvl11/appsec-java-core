@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: appsec-config
+  namespace: appsec
+data:
+  RATELIMIT_TYPE: "redis"
+  MANAGEMENT_HEALTH_REDIS_ENABLED: "true"
+  REDIS_PORT: "6379"
+  # Override in your deployment or via a Secret for sensitive values
+  OAUTH2_REDIRECT_URI: "https://your-domain.com/oauth2/redirect"

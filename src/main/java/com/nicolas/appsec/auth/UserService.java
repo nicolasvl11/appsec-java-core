@@ -1,20 +1,25 @@
 package com.nicolas.appsec.auth;
 
+import com.nicolas.appsec.audit.AuditEventService;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditEventService auditService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, AuditEventService auditService) {
+        this.userRepository  = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditService    = auditService;
     }
 
     public UserProfileResponse getProfile(String username) {
@@ -53,5 +58,6 @@ public class UserService {
         }
 
         user.updatePassword(passwordEncoder.encode(request.newPassword()));
+        auditService.recordSecurityEvent(username, "password_change", "/api/v1/users/me/password", Map.of());
     }
 }

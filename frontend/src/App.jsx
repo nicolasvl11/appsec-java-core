@@ -12,15 +12,32 @@ function OAuth2Redirect() {
 
   useEffect(() => {
     const token = params.get('token');
+    const refreshToken = params.get('refreshToken');
     if (token) {
       authService.saveToken(token);
+      if (refreshToken) authService.saveRefreshToken(refreshToken);
       navigate('/dashboard', { replace: true });
     } else {
       navigate('/login', { replace: true });
     }
   }, [navigate, params]);
 
-  return <p className="text-center mt-10 text-gray-500">Completing login...</p>;
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center"
+      style={{ backgroundColor: 'var(--color-bg)' }}
+    >
+      <div className="flex flex-col items-center gap-4">
+        <svg className="animate-spin" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ color: 'var(--color-secondary)' }}>
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
+          <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        </svg>
+        <p className="text-sm font-medium" style={{ color: 'var(--color-text-subtle)' }}>
+          Completing login…
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export default function App() {

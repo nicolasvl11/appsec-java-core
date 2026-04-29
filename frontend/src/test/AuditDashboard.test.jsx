@@ -39,7 +39,8 @@ describe('AuditDashboard', () => {
     apiClient.get.mockResolvedValueOnce({ data: PAGE });
     renderDashboard();
 
-    expect(screen.getByText(/loading/i)).toBeInTheDocument();
+    const skeletonLoaders = document.querySelectorAll('.animate-pulse');
+    expect(skeletonLoaders.length).toBeGreaterThan(0);
     await waitFor(() => expect(screen.getAllByText(/no audit events found/i).length).toBeGreaterThan(0));
   });
 

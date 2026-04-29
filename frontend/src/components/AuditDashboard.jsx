@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiClient';
 import { authService } from '../services/authService';
+import SkeletonLoader from './SkeletonLoader';
 
 const PAGE_SIZE = 20;
 
@@ -61,7 +62,7 @@ export default function AuditDashboard() {
           </button>
         </div>
 
-        {loading && <p className="text-gray-500">Loading...</p>}
+        {loading && <SkeletonLoader count={PAGE_SIZE} />}
         {error && <p className="text-red-600">{error}</p>}
 
         {!loading && !error && (

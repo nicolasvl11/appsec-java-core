@@ -1,0 +1,87 @@
+
+
+
+FASE 8-11: DEPLOYABILIDAD, SEGURIDAD AVANZADA Y OBSERVABILIDAD
+
+Objetivo: Llevar appsec-java-core a nivel producción enterprise.
+
+Requisitos por fase:
+
+FASE 8: CONTAINERIZACIÓN Y KUBERNETES
+
+- Dockerfile multistage (build + runtime slim)
+
+- docker-compose con Postgres, Redis (para rate limiter distribuido)
+
+- Healthchecks en Spring Boot (/actuator/health)
+
+- Non-root user en container
+
+- Security scanning con Trivy
+
+- Tests: verifica que la imagen se construye, corre sin errores, healthcheck responde 200
+
+FASE 9: OAUTH2 / OIDC (Google + GitHub)
+
+- Spring Security OAuth2 client
+
+- Login con Google y GitHub (redirige a /oauth2/authorization/{provider})
+
+- JWT interno tras login OAuth
+
+- UserProfile endpoint devuelve user info
+
+- Tests: login flow, token refresh, userinfo endpoint
+
+FASE 10: CI/CD CON GITHUB ACTIONS
+
+- Workflow que corre tests en cada push
+
+- Workflow que construye imagen Docker en main
+
+- Workflow que ejecuta Trivy security scan
+
+- Coverage report integrado (Jacoco)
+
+- Tests: verifica que los workflows se ejecutan sin errores
+
+FASE 11: DOCUMENTACIÓN OPENAPI 3.0 / SWAGGER
+
+- Springdoc OpenAPI dependency
+
+- Anotaciones @Operation, @Schema en controllers
+
+- Endpoint GET /v3/api-docs devuelve JSON OpenAPI
+
+- Swagger UI en /swagger-ui.html
+
+- Tests: verifica que /v3/api-docs devuelve 200 y JSON válido
+
+PLAN DE EJECUCIÓN:
+
+1. Ejecuta una fase a la vez
+
+2. Después de cada fase:
+
+   - Corre: ./mvnw clean test
+
+   - Verifica: git status y git log
+
+   - Commit con mensaje descriptivo
+
+   - Push a origin main
+
+3. Si algo falla:
+
+   - Muestra el error exacto
+
+   - Propone fix
+
+   - Reintenta
+
+4. Al final de cada fase: muestra resumen de cambios
+
+INICIO: FASE 8 - Dockerfile multistage, docker-compose con Postgres+Redis, healthchecks, non-root user, Trivy scan, tests completos.
+
+
+

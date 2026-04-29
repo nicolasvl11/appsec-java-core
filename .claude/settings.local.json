@@ -15,7 +15,41 @@
       "Bash(claude-mem --help)",
       "Skill(update-config)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(python3 *)",
+      "Bash(node *)",
+      "Bash(grep -E \"\\\\.\\(java|yml|properties|xml\\)$|Dockerfile|\\\\.gitignore|\\\\.github\")",
+      "Bash(git push *)",
+      "Bash(gh run *)",
+      "PowerShell(gh run *)",
+      "Bash(git commit -m 'fix\\(ci\\): use aquasecurity/trivy-action@master \\(0.30.0 does not exist\\) *)",
+      "Bash(git commit -m 'fix\\(ci\\): pin action versions to known-stable releases *)",
+      "Bash(git commit -m 'fix\\(ci\\): chmod +x mvnw in Dockerfile, codeql@v4, security-events permission *)",
+      "Bash(git commit -m 'fix\\(ci\\): trivy exit-code 0 — scan is informational, not blocking *)",
+      "Bash(./mvnw clean *)",
+      "Bash(mkdir frontend *)",
+      "Bash(npm create *)",
+      "Bash(npm run *)",
+      "Bash(python -c \"import yaml; yaml.safe_load\\(open\\('docker-compose.yml'\\)\\)\")",
+      "Bash(awk '{s+=$1} END {print \"missed=\" s}')",
+      "Bash(awk '{s+=$1} END {print \"covered=\" s}')",
+      "Bash(npm test *)",
+      "Bash(npx skills *)",
+      "Bash(git clone *)",
+      "Bash(claude plugin *)",
+      "Bash(npm --prefix frontend test)"
     ]
+  },
+  "model": "claude-sonnet-4-6",
+  "enabledPlugins": {
+    "caveman@caveman": true
+  },
+  "extraKnownMarketplaces": {
+    "caveman": {
+      "source": {
+        "source": "github",
+        "repo": "JuliusBrussee/caveman"
+      }
+    }
   }
 }

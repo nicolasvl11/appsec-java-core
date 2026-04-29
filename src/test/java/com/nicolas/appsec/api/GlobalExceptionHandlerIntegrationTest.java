@@ -1,6 +1,7 @@
 package com.nicolas.appsec.api;
 
 import com.nicolas.appsec.audit.AuditEventService;
+import com.nicolas.appsec.auth.AdminService;
 import com.nicolas.appsec.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,8 +20,8 @@ class GlobalExceptionHandlerIntegrationTest {
     @Autowired
     MockMvc mvc;
 
-    @MockBean
-    AuditEventService auditEventService;
+    @MockBean AuditEventService auditEventService;
+    @MockBean AdminService adminService;
 
     @Test
     void unknown_route_returns_404_problem_detail() throws Exception {

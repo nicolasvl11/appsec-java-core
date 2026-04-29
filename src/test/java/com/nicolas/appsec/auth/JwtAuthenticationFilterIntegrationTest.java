@@ -1,6 +1,7 @@
 package com.nicolas.appsec.auth;
 
 import com.nicolas.appsec.audit.AuditEventService;
+import com.nicolas.appsec.auth.AdminService;
 import com.nicolas.appsec.security.SecurityConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ class JwtAuthenticationFilterIntegrationTest {
 
     @Autowired MockMvc mvc;
     @MockBean AuditEventService auditEventService;
+    @MockBean AdminService adminService;
 
     static String validToken;
     static String adminToken;

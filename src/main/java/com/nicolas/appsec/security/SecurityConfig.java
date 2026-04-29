@@ -152,8 +152,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    RestAccessDeniedHandler restAccessDeniedHandler(ObjectMapper objectMapper) {
-        return new RestAccessDeniedHandler(objectMapper);
+    RestAccessDeniedHandler restAccessDeniedHandler(ObjectMapper objectMapper,
+                                                     com.nicolas.appsec.audit.AuditEventService auditService) {
+        return new RestAccessDeniedHandler(objectMapper, auditService);
     }
 
     @Bean
@@ -197,7 +198,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/api/v1/admin").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/admin", "/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/users/**").authenticated()
                         .requestMatchers("/api/v1/audit-events/**").authenticated()
                         .requestMatchers("/api/v1/oauth2/**").authenticated()

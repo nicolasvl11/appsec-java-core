@@ -2,6 +2,7 @@ package com.nicolas.appsec.security;
 
 import com.nicolas.appsec.api.AdminController;
 import com.nicolas.appsec.audit.AuditEventService;
+import com.nicolas.appsec.auth.AdminService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -22,8 +23,8 @@ class AccessDeniedProblemDetailIntegrationTest {
     @Autowired
     MockMvc mvc;
 
-    @MockBean
-    AuditEventService auditEventService;
+    @MockBean AuditEventService auditEventService;
+    @MockBean AdminService adminService;
 
     @Test
     @WithMockUser(username = "user", roles = { "USER" })

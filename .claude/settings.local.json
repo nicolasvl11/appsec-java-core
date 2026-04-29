@@ -43,7 +43,20 @@
       "Bash(git commit -m 'feat\\(ui\\): skeleton loader for better loading UX *)",
       "Bash(pkill -f \"vite|node\")",
       "Bash(pkill -f \"npx skills\")",
-      "Bash(git commit -m 'feat: search/filter, micro-interactions, refined aesthetics *)"
+      "Bash(git commit -m 'feat: search/filter, micro-interactions, refined aesthetics *)",
+      "Bash(gh api *)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(curl *)",
+      "Bash(git commit *)",
+      "Bash(xargs grep *)",
+      "Bash(./mvnw spring-boot:run)",
+      "Bash(netstat -ano)",
+      "Bash(tasklist /FI \"PID eq 27840\")",
+      "Bash(Get-Process -Id 27840)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(netstat *)",
+      "Bash(docker compose *)"
     ]
   },
   "model": "claude-sonnet-4-6",

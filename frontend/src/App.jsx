@@ -3,6 +3,8 @@ import { useEffect } from 'react';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import AuditDashboard from './components/AuditDashboard';
+import ProfilePage from './components/ProfilePage';
+import AdminPage from './components/AdminPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { authService } from './services/authService';
 
@@ -40,6 +42,12 @@ function OAuth2Redirect() {
   );
 }
 
+function AdminRoute({ children }) {
+  if (!authService.isAuthenticated()) return <Navigate to="/login" replace />;
+  if (!authService.isAdmin()) return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -53,6 +61,22 @@ export default function App() {
             <ProtectedRoute>
               <AuditDashboard />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminPage />
+            </AdminRoute>
           }
         />
         <Route path="*" element={<Navigate to="/login" replace />} />

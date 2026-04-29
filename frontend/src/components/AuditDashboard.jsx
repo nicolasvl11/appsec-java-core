@@ -84,23 +84,28 @@ function EmptyState({ hasFilters, onClear }) {
 
 const COLS = ['Timestamp', 'Actor', 'Action', 'Target'];
 
+const INITIAL_RESULT = { key: null, events: [], totalPages: 0, totalElements: 0, error: '' };
+
 export default function AuditDashboard() {
   const [requestedPage, setRequestedPage] = useState(0);
   const [retryKey, setRetryKey] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [events, setEvents] = useState([]);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalElements, setTotalElements] = useState(0);
-  const [error, setError] = useState('');
   const [searchActor, setSearchActor] = useState('');
   const [searchAction, setSearchAction] = useState('');
   const [searchTarget, setSearchTarget] = useState('');
   const [debouncedActor, setDebouncedActor] = useState('');
   const [debouncedAction, setDebouncedAction] = useState('');
   const [debouncedTarget, setDebouncedTarget] = useState('');
+  // Single state object updated only inside async callbacks — satisfies react-hooks/set-state-in-effect
+  const [fetchResult, setFetchResult] = useState(INITIAL_RESULT);
   const navigate = useNavigate();
 
-  const hasFilters = !!(searchActor || searchAction || searchTarget);
+  const fetchKey = `${requestedPage}|${debouncedActor}|${debouncedAction}|${debouncedTarget}|${retryKey}`;
+  const isLoading = fetchKey !== fetchResult.key;
+  const events       = isLoading ? [] : fetchResult.events;
+  const totalPages   = isLoading ? 0  : fetchResult.totalPages;
+  const totalElements = isLoading ? 0 : fetchResult.totalElements;
+  const error        = isLoading ? '' : fetchResult.error;
+  const hasFilters   = !!(searchActor || searchAction || searchTarget);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedActor(searchActor), 300);
@@ -119,26 +124,27 @@ export default function AuditDashboard() {
 
   useEffect(() => {
     let cancelled = false;
-    setIsLoading(true);
-    setError('');
+    const key = `${requestedPage}|${debouncedActor}|${debouncedAction}|${debouncedTarget}|${retryKey}`;
 
     const params = new URLSearchParams({ page: requestedPage, size: PAGE_SIZE });
-    if (debouncedActor) params.append('actor', debouncedActor);
+    if (debouncedActor)  params.append('actor',  debouncedActor);
     if (debouncedAction) params.append('action', debouncedAction);
     if (debouncedTarget) params.append('target', debouncedTarget);
 
     apiClient.get(`/api/v1/audit-events/recent?${params.toString()}`)
       .then((res) => {
         if (cancelled) return;
-        setEvents(res.data.content);
-        setTotalPages(res.data.totalPages);
-        setTotalElements(res.data.totalElements);
-        setIsLoading(false);
+        setFetchResult({
+          key,
+          events: res.data.content,
+          totalPages: res.data.totalPages,
+          totalElements: res.data.totalElements,
+          error: '',
+        });
       })
       .catch(() => {
         if (cancelled) return;
-        setError('Failed to load audit events');
-        setIsLoading(false);
+        setFetchResult({ key, events: [], totalPages: 0, totalElements: 0, error: 'Failed to load audit events' });
       });
     return () => { cancelled = true; };
   }, [requestedPage, debouncedActor, debouncedAction, debouncedTarget, retryKey]);
@@ -188,7 +194,7 @@ export default function AuditDashboard() {
         {/* Filters */}
         <div className="mb-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { placeholder: 'Filter by actor...', value: searchActor, set: setSearchActor },
+            { placeholder: 'Filter by actor...',  value: searchActor,  set: setSearchActor },
             { placeholder: 'Filter by action...', value: searchAction, set: setSearchAction },
             { placeholder: 'Filter by target...', value: searchTarget, set: setSearchTarget },
           ].map(({ placeholder, value, set }) => (
@@ -322,11 +328,7 @@ export default function AuditDashboard() {
                     style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', animationDelay: `${i * 30}ms`, transform: 'translateZ(0)' }}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span
-                        title={new Date(ev.eventTime).toISOString()}
-                        className="text-xs"
-                        style={{ color: 'var(--color-text-subtle)' }}
-                      >
+                      <span title={new Date(ev.eventTime).toISOString()} className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
                         {formatRelativeTime(ev.eventTime)}
                       </span>
                       <ActionBadge action={ev.action} />

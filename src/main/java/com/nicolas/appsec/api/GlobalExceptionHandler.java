@@ -10,6 +10,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -82,6 +85,36 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.CONFLICT);
         problem.setTitle("Conflict");
         problem.setDetail(ex.getMessage());
+        problem.setType(URI.create("about:blank"));
+        problem.setProperty("path", request.getRequestURI());
+        return problem;
+    }
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ProblemDetail handleUserNotFound(UsernameNotFoundException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setType(URI.create("about:blank"));
+        problem.setProperty("path", request.getRequestURI());
+        return problem;
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ProblemDetail handleResponseStatus(ResponseStatusException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(ex.getStatusCode());
+        problem.setTitle(ex.getReason() != null ? ex.getReason() : ex.getStatusCode().toString());
+        problem.setDetail(ex.getReason() != null ? ex.getReason() : ex.getMessage());
+        problem.setType(URI.create("about:blank"));
+        problem.setProperty("path", request.getRequestURI());
+        return problem;
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ProblemDetail handleDisabled(DisabledException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.FORBIDDEN);
+        problem.setTitle("Forbidden");
+        problem.setDetail("This account has been disabled.");
         problem.setType(URI.create("about:blank"));
         problem.setProperty("path", request.getRequestURI());
         return problem;

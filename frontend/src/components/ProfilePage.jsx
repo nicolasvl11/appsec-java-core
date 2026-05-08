@@ -172,6 +172,12 @@ export default function ProfilePage() {
                     )}
                   </p>
                 </div>
+                <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
+                  <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--color-text-subtle)' }}>Last login</p>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                    {profile.lastLogin ? formatDate(profile.lastLogin) : '—'}
+                  </p>
+                </div>
                 {profile.email && (
                   <div className="rounded-xl p-4 sm:col-span-2" style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
                     <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--color-text-subtle)' }}>Email</p>

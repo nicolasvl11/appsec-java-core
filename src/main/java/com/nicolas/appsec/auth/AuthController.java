@@ -1,5 +1,6 @@
 package com.nicolas.appsec.auth;
 
+import com.nicolas.appsec.audit.AuditEventService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -9,8 +10,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -20,11 +25,14 @@ public class AuthController {
     private final AuthService authService;
     private final JwtService jwtService;
     private final JwtBlacklistService blacklistService;
+    private final AuditEventService auditService;
 
-    public AuthController(AuthService authService, JwtService jwtService, JwtBlacklistService blacklistService) {
+    public AuthController(AuthService authService, JwtService jwtService,
+                          JwtBlacklistService blacklistService, AuditEventService auditService) {
         this.authService      = authService;
         this.jwtService       = jwtService;
         this.blacklistService = blacklistService;
+        this.auditService     = auditService;
     }
 
     @PostMapping("/register")
@@ -75,12 +83,16 @@ public class AuthController {
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Token invalidated")
     })
-    public void logout(HttpServletRequest request) {
+    public void logout(HttpServletRequest request,
+                       @AuthenticationPrincipal UserDetails principal) {
         String header = request.getHeader("Authorization");
-        if (header == null || !header.startsWith("Bearer ")) return;
-        String token = header.substring(7);
-        if (jwtService.isValid(token)) {
-            blacklistService.blacklist(jwtService.extractJti(token), jwtService.extractExpiration(token));
+        if (header != null && header.startsWith("Bearer ")) {
+            String token = header.substring(7);
+            if (jwtService.isValid(token)) {
+                blacklistService.blacklist(jwtService.extractJti(token), jwtService.extractExpiration(token));
+            }
         }
+        String actor = principal != null ? principal.getUsername() : "anonymous";
+        auditService.recordSecurityEvent(actor, "logout", "/api/v1/auth/logout", Map.of());
     }
 }

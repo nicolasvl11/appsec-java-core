@@ -36,8 +36,13 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         }
 
         User user = userService.findOrCreateOAuth2User(registrationId, providerUserId, email, name);
-        String jwt = jwtService.generateToken(user.getUsername(), user.getRole().name());
 
+        if (!user.isEnabled()) {
+            getRedirectStrategy().sendRedirect(request, response, redirectUri + "?error=account_disabled");
+            return;
+        }
+
+        String jwt = jwtService.generateToken(user.getUsername(), user.getRole().name());
         String target = redirectUri + "?token=" + jwt;
         getRedirectStrategy().sendRedirect(request, response, target);
     }

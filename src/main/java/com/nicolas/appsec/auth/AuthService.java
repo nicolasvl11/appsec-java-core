@@ -2,11 +2,13 @@ package com.nicolas.appsec.auth;
 
 import com.nicolas.appsec.audit.AuditEventService;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 
@@ -56,6 +58,7 @@ public class AuthService implements UserDetailsService {
         return new AuthResponse(access, refresh, user.getUsername(), user.getRole().name());
     }
 
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         if (loginAttemptService.isLocked(request.username())) {
             throw new AccountLockedException(loginAttemptService.getRetryAfterSeconds(request.username()));
@@ -73,7 +76,15 @@ public class AuthService implements UserDetailsService {
             throw new BadCredentialsException("Invalid credentials");
         }
 
+        if (!user.isEnabled()) {
+            auditService.recordSecurityEvent(request.username(), "login_failure", "/api/v1/auth/login",
+                    Map.of("reason", "account_disabled"));
+            throw new DisabledException("Account is disabled");
+        }
+
         loginAttemptService.reset(request.username());
+        user.recordLogin();
+        userRepository.save(user);
         auditService.recordSecurityEvent(request.username(), "login_success", "/api/v1/auth/login", Map.of());
 
         String access  = jwtService.generateToken(user.getUsername(), user.getRole().name());
@@ -87,6 +98,10 @@ public class AuthService implements UserDetailsService {
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BadCredentialsException("User not found"));
+
+        if (!user.isEnabled()) {
+            throw new DisabledException("Account is disabled");
+        }
 
         auditService.recordSecurityEvent(username, "token_refresh", "/api/v1/auth/refresh", Map.of());
 

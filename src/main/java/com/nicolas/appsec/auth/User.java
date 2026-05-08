@@ -39,6 +39,12 @@ public class User implements UserDetails {
     @Column(name = "provider_user_id", nullable = true, length = 255)
     private String providerUserId;
 
+    @Column(nullable = false)
+    private boolean enabled = true;
+
+    @Column(nullable = true)
+    private Instant lastLogin;
+
     protected User() {}
 
     public User(String username, String password, Role role) {
@@ -64,6 +70,7 @@ public class User implements UserDetails {
 
     @Override public String getPassword() { return password; }
     @Override public String getUsername() { return username; }
+    @Override public boolean isEnabled() { return enabled; }
 
     public Role getRole() { return role; }
     public Long getId() { return id; }
@@ -71,6 +78,7 @@ public class User implements UserDetails {
     public String getEmail() { return email; }
     public String getProvider() { return provider; }
     public String getProviderUserId() { return providerUserId; }
+    public Instant getLastLogin() { return lastLogin; }
     public boolean isOAuth2User() { return provider != null; }
 
     public void updatePassword(String encodedPassword) {
@@ -79,5 +87,13 @@ public class User implements UserDetails {
 
     public void updateRole(Role newRole) {
         this.role = newRole;
+    }
+
+    public void updateEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public void recordLogin() {
+        this.lastLogin = Instant.now();
     }
 }

@@ -5,12 +5,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import java.time.Instant;
 import java.util.Map;
 
 @Service
 public class AuditEventService {
+
+    // Set on the current request when a semantic event is recorded so the
+    // AuditLoggingFilter skips the redundant generic http_request event.
+    public static final String SEMANTIC_EVENT_ATTR = "audit.semantic_recorded";
 
     private final AuditEventRepository repo;
     private final ObjectMapper mapper;
@@ -70,5 +76,15 @@ public class AuditEventService {
         }
 
         repo.save(e);
+        markSemanticRecorded();
+    }
+
+    private void markSemanticRecorded() {
+        try {
+            RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
+            if (attrs != null) {
+                attrs.setAttribute(SEMANTIC_EVENT_ATTR, Boolean.TRUE, RequestAttributes.SCOPE_REQUEST);
+            }
+        } catch (IllegalStateException ignored) {}
     }
 }

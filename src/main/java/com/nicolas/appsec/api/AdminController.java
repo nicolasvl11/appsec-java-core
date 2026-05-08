@@ -2,6 +2,7 @@ package com.nicolas.appsec.api;
 
 import com.nicolas.appsec.auth.AdminService;
 import com.nicolas.appsec.auth.UpdateRoleRequest;
+import com.nicolas.appsec.auth.UpdateStatusRequest;
 import com.nicolas.appsec.auth.UserSummary;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
@@ -68,5 +70,39 @@ public class AdminController {
             @AuthenticationPrincipal UserDetails principal
     ) {
         return adminService.updateRole(id, request.role(), principal.getUsername());
+    }
+
+    @PatchMapping("/api/v1/admin/users/{id}/status")
+    @Operation(summary = "Enable or disable a user account", description = "Cannot change your own status.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Status updated"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT"),
+            @ApiResponse(responseCode = "403", description = "Not ADMIN"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "409", description = "Cannot change own status")
+    })
+    public UserSummary updateStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateStatusRequest request,
+            @AuthenticationPrincipal UserDetails principal
+    ) {
+        return adminService.updateEnabled(id, request.enabled(), principal.getUsername());
+    }
+
+    @DeleteMapping("/api/v1/admin/users/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete a user account", description = "Permanently removes the user. Cannot delete yourself.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "User deleted"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT"),
+            @ApiResponse(responseCode = "403", description = "Not ADMIN"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "409", description = "Cannot delete own account")
+    })
+    public void deleteUser(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails principal
+    ) {
+        adminService.deleteUser(id, principal.getUsername());
     }
 }

@@ -80,16 +80,20 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
                 metrics.incrementAuthFailures();
             }
 
-            service.recordHttpEvent(
-                    actor,
-                    request.getMethod(),
-                    request.getRequestURI(),
-                    wrapped.getStatus(),
-                    ip,
-                    request.getHeader("User-Agent"),
-                    durationMs,
-                    requestId
-            );
+            boolean semanticRecorded = Boolean.TRUE.equals(
+                    request.getAttribute(AuditEventService.SEMANTIC_EVENT_ATTR));
+            if (!semanticRecorded) {
+                service.recordHttpEvent(
+                        actor,
+                        request.getMethod(),
+                        request.getRequestURI(),
+                        wrapped.getStatus(),
+                        ip,
+                        request.getHeader("User-Agent"),
+                        durationMs,
+                        requestId
+                );
+            }
 
             wrapped.copyBodyToResponse();
         }

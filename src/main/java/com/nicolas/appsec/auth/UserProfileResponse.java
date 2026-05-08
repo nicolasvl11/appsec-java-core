@@ -3,7 +3,7 @@ package com.nicolas.appsec.auth;
 import java.time.Instant;
 
 public record UserProfileResponse(Long id, String username, String role, Instant createdAt,
-                                   String email, String provider) {
+                                   String email, String provider, Instant lastLogin) {
 
     public static UserProfileResponse from(User user) {
         return new UserProfileResponse(
@@ -12,7 +12,8 @@ public record UserProfileResponse(Long id, String username, String role, Instant
                 user.getRole().name(),
                 user.getCreatedAt(),
                 user.getEmail(),
-                user.getProvider()
+                user.getProvider(),
+                user.getLastLogin()
         );
     }
 }

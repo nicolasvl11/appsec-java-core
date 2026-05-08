@@ -45,4 +45,36 @@ public class AdminService {
 
         return UserSummary.from(user);
     }
+
+    @Transactional
+    public UserSummary updateEnabled(Long id, boolean enabled, String adminUsername) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + id));
+
+        if (user.getUsername().equals(adminUsername)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot change your own account status.");
+        }
+
+        user.updateEnabled(enabled);
+        auditService.recordSecurityEvent(adminUsername, enabled ? "user_enabled" : "user_disabled",
+                "/api/v1/admin/users/" + id,
+                Map.of("userId", id, "username", user.getUsername(), "enabled", enabled));
+
+        return UserSummary.from(user);
+    }
+
+    @Transactional
+    public void deleteUser(Long id, String adminUsername) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + id));
+
+        if (user.getUsername().equals(adminUsername)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot delete your own account.");
+        }
+
+        auditService.recordSecurityEvent(adminUsername, "user_deleted", "/api/v1/admin/users/" + id,
+                Map.of("userId", id, "username", user.getUsername()));
+
+        userRepository.delete(user);
+    }
 }

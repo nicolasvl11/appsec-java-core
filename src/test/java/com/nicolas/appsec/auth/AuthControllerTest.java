@@ -11,6 +11,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -112,6 +114,17 @@ class AuthControllerTest {
     }
 
     @Test
+    void login_returns_403_when_account_disabled() throws Exception {
+        when(authService.login(any())).thenThrow(new DisabledException("disabled"));
+
+        mvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new LoginRequest("alice", "pass"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.detail").value("This account has been disabled."));
+    }
+
+    @Test
     void login_returns_423_when_account_locked() throws Exception {
         when(authService.login(any())).thenThrow(new AccountLockedException(300L));
 
@@ -182,5 +195,26 @@ class AuthControllerTest {
                 .header("Authorization", "Bearer not.a.real.token"))
                 .andExpect(status().isNoContent());
         verifyNoInteractions(blacklistService);
+    }
+
+    @Test
+    @WithMockUser(username = "alice")
+    void logout_records_audit_event() throws Exception {
+        mvc.perform(post("/api/v1/auth/logout"))
+                .andExpect(status().isNoContent());
+
+        verify(auditEventService).recordSecurityEvent(
+                eq("alice"), eq("logout"), eq("/api/v1/auth/logout"), any());
+    }
+
+    @Test
+    void refresh_returns_403_when_account_disabled() throws Exception {
+        when(authService.refresh(any())).thenThrow(new DisabledException("disabled"));
+
+        mvc.perform(post("/api/v1/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"refreshToken\":\"rt\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.detail").value("This account has been disabled."));
     }
 }

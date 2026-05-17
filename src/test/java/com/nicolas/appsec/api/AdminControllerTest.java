@@ -2,6 +2,7 @@ package com.nicolas.appsec.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nicolas.appsec.audit.AuditEventService;
+import com.nicolas.appsec.auth.AuthService;
 import com.nicolas.appsec.auth.AdminService;
 import com.nicolas.appsec.auth.Role;
 import com.nicolas.appsec.auth.UpdateRoleRequest;
@@ -39,6 +40,7 @@ class AdminControllerTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper objectMapper;
     @MockBean AuditEventService auditEventService;
+    @MockBean AuthService authService;
     @MockBean AdminService adminService;
 
     private UserSummary sample(long id, String username, String role) {

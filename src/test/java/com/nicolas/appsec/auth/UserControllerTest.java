@@ -2,6 +2,7 @@ package com.nicolas.appsec.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nicolas.appsec.audit.AuditEventService;
+import com.nicolas.appsec.auth.AuthService;
 import com.nicolas.appsec.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,7 @@ class UserControllerTest {
     @Autowired ObjectMapper objectMapper;
 
     @MockBean AuditEventService auditEventService;
+    @MockBean AuthService authService;
     @MockBean UserService userService;
 
     // ── GET /me ─────────────────────────────────────────────────────────────

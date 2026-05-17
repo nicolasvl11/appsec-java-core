@@ -1,6 +1,7 @@
 package com.nicolas.appsec.security;
 
 import com.nicolas.appsec.api.PingController;
+import com.nicolas.appsec.auth.AuthService;
 import com.nicolas.appsec.audit.AuditEventService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ class CorsIntegrationTest {
 
     @Autowired MockMvc mvc;
     @MockBean AuditEventService auditEventService;
+    @MockBean AuthService authService;
 
     @Test
     void preflight_from_allowed_origin_returns_200_with_cors_headers() throws Exception {

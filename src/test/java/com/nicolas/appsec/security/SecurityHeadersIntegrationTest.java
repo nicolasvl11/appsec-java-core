@@ -1,6 +1,7 @@
 package com.nicolas.appsec.security;
 
 import com.nicolas.appsec.api.PingController;
+import com.nicolas.appsec.auth.AuthService;
 import com.nicolas.appsec.audit.AuditEventService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ class SecurityHeadersIntegrationTest {
 
     @MockBean
     AuditEventService auditEventService;
+    @MockBean AuthService authService;
 
     @Test
     void security_headers_are_present_on_public_endpoint() throws Exception {

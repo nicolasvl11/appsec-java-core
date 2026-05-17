@@ -1,6 +1,7 @@
 package com.nicolas.appsec.security;
 
 import com.nicolas.appsec.api.AdminController;
+import com.nicolas.appsec.auth.AuthService;
 import com.nicolas.appsec.audit.AuditEventService;
 import com.nicolas.appsec.auth.AdminService;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ class AccessDeniedProblemDetailIntegrationTest {
     MockMvc mvc;
 
     @MockBean AuditEventService auditEventService;
+    @MockBean AuthService authService;
     @MockBean AdminService adminService;
 
     @Test

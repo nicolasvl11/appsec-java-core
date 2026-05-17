@@ -1,6 +1,7 @@
 package com.nicolas.appsec.ratelimit;
 
 import com.nicolas.appsec.api.PingController;
+import com.nicolas.appsec.auth.AuthService;
 import com.nicolas.appsec.audit.AuditEventService;
 import com.nicolas.appsec.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ class RateLimitFilterIntegrationTest {
 
     @MockBean
     AuditEventService auditEventService;
+    @MockBean AuthService authService;
 
     @Test
     void ping_hits_429_after_30_requests_for_same_ip() throws Exception {

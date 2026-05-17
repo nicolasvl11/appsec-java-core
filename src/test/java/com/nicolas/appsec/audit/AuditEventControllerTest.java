@@ -1,6 +1,7 @@
 package com.nicolas.appsec.audit;
 
 import com.nicolas.appsec.security.SecurityConfig;
+import com.nicolas.appsec.auth.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -27,6 +28,7 @@ class AuditEventControllerTest {
     @Autowired MockMvc mvc;
 
     @MockBean AuditEventRepository repo;
+    @MockBean AuthService authService;
     @MockBean AuditEventService auditEventService;
 
     private AuditEvent sampleEvent() {

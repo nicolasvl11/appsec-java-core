@@ -40,6 +40,8 @@ services:
       REDIS_PORT: 6379
       RATELIMIT_TYPE: redis
       MANAGEMENT_HEALTH_REDIS_ENABLED: "true"
+      APP_JWT_PRIVATE_KEY: ${APP_JWT_PRIVATE_KEY}
+      APP_JWT_PUBLIC_KEY: ${APP_JWT_PUBLIC_KEY}
     depends_on:
       postgres:
         condition: service_healthy

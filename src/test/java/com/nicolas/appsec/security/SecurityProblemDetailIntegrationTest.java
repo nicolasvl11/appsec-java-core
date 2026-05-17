@@ -1,6 +1,7 @@
 package com.nicolas.appsec.security;
 
 import com.nicolas.appsec.audit.AuditEventController;
+import com.nicolas.appsec.auth.AuthService;
 import com.nicolas.appsec.audit.AuditEventRepository;
 import com.nicolas.appsec.audit.AuditEventService;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ class SecurityProblemDetailIntegrationTest {
 
     @MockBean
     AuditEventService auditEventService;
+    @MockBean AuthService authService;
 
     @MockBean
     AuditEventRepository auditEventRepository;

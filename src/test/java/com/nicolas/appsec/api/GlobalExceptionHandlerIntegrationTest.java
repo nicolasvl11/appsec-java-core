@@ -1,6 +1,7 @@
 package com.nicolas.appsec.api;
 
 import com.nicolas.appsec.audit.AuditEventService;
+import com.nicolas.appsec.auth.AuthService;
 import com.nicolas.appsec.auth.AdminService;
 import com.nicolas.appsec.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -21,9 +23,11 @@ class GlobalExceptionHandlerIntegrationTest {
     MockMvc mvc;
 
     @MockBean AuditEventService auditEventService;
+    @MockBean AuthService authService;
     @MockBean AdminService adminService;
 
     @Test
+    @WithMockUser
     void unknown_route_returns_404_problem_detail() throws Exception {
         mvc.perform(get("/api/v1/does-not-exist"))
                 .andExpect(status().isNotFound())
@@ -34,6 +38,7 @@ class GlobalExceptionHandlerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     void unknown_route_returns_json_not_html() throws Exception {
         mvc.perform(get("/completely/unknown/path"))
                 .andExpect(status().isNotFound())

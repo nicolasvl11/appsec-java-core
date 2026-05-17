@@ -1,6 +1,7 @@
 package com.nicolas.appsec.security;
 
 import com.nicolas.appsec.api.PingController;
+import com.nicolas.appsec.auth.AuthService;
 import com.nicolas.appsec.audit.AuditEventService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ class RequestIdFilterIntegrationTest {
 
     @MockBean
     AuditEventService auditEventService;
+    @MockBean AuthService authService;
 
     @Test
     void generates_request_id_when_header_is_missing() throws Exception {
